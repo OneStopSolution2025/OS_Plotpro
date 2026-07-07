@@ -6,15 +6,17 @@ export default {
       colors: {
         ink: '#0D0D0D',       // OS2 brand black
         parchment: '#F7F7F5', // neutral light background, not cream/paper
-        // "brand" = OS2 gold #F0A500, kept as the key name so all existing
-        // brand-* classes across the app pick this up automatically.
+        // "brand" = OS2 gold — recalibrated so the actual site gold (#F0A500)
+        // is what appears on buttons/links, not a darkened derivative that
+        // reads brown. 600 is the true brand color; 700 is a controlled
+        // hover state, not a desaturated shade.
         brand: {
-          50: '#FDF4E0',
-          100: '#FBE7B8',
-          300: '#F5C563',
-          500: '#F0A500',
-          600: '#CC8B00',
-          700: '#A66F00',
+          50: '#FFF8E5',
+          100: '#FDEBB8',
+          300: '#F8C955',
+          500: '#F5B400',
+          600: '#F0A500',
+          700: '#D48F00',
         },
         // "brass" = OS2 secondary lime #B5DE00
         brass: {

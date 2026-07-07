@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Building2, MapPinned, FileSignature, Users } from 'lucide-react'
+import { Building2, Users, Clock, CheckCircle2 } from 'lucide-react'
 import api from '../api/client'
 import { useToast } from '../context/ToastContext'
 import { errorMessage } from '../utils/errors'
@@ -31,10 +31,9 @@ export default function PlatformDashboard() {
 
   if (loading) return <div className="p-6 text-ink/50 text-sm">Loading...</div>
 
-  const totalPlots = tenants.reduce((sum, t) => sum + t.plot_count, 0)
-  const totalBookings = tenants.reduce((sum, t) => sum + t.booking_count, 0)
-  const totalStaff = tenants.reduce((sum, t) => sum + t.staff_count, 0)
   const activeCount = tenants.filter((t) => t.is_active).length
+  const pendingCount = tenants.filter((t) => !t.is_active).length
+  const totalStaff = tenants.reduce((sum, t) => sum + t.staff_count, 0)
 
   return (
     <div>
@@ -42,24 +41,31 @@ export default function PlatformDashboard() {
       <h1 className="font-display text-3xl font-bold text-ink mb-6">Platform Overview</h1>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard icon={Building2} label="Promoters" value={`${activeCount}/${tenants.length}`} />
-        <StatCard icon={MapPinned} label="Total Plots" value={totalPlots} />
-        <StatCard icon={FileSignature} label="Total Bookings" value={totalBookings} />
-        <StatCard icon={Users} label="Total Staff" value={totalStaff} />
+        <StatCard icon={Building2} label="Total Promoters" value={tenants.length} />
+        <StatCard icon={CheckCircle2} label="Active" value={activeCount} />
+        <StatCard icon={Clock} label="Pending Approval" value={pendingCount} />
+        <StatCard icon={Users} label="Total Staff (all promoters)" value={totalStaff} />
       </div>
+
+      {pendingCount > 0 && (
+        <div className="doc-card p-4 mb-6 border-l-4 border-brand-500 flex items-center gap-3">
+          <Clock className="text-brand-600 flex-shrink-0" size={18} />
+          <p className="text-sm text-ink/70">
+            <span className="font-medium">{pendingCount} promoter{pendingCount > 1 ? 's are' : ' is'}</span> waiting for approval —
+            go to <a href="/tenants" className="text-brand-600 hover:underline font-medium">All Promoters</a> to review and activate.
+          </p>
+        </div>
+      )}
 
       <div className="doc-card p-5">
         <h2 className="font-display font-semibold text-ink mb-3">Promoter Summary</h2>
         <div className="table-scroll">
-          <table className="w-full text-sm min-w-[600px]">
+          <table className="w-full text-sm min-w-[500px]">
             <thead className="text-ink/50 text-left text-xs uppercase tracking-wide">
               <tr>
                 <th className="py-2 pr-4">Promoter</th>
                 <th className="py-2 pr-4">Plan</th>
-                <th className="py-2 pr-4">Status</th>
-                <th className="py-2 pr-4">Plots</th>
-                <th className="py-2 pr-4">Bookings</th>
-                <th className="py-2">Staff</th>
+                <th className="py-2">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -67,14 +73,11 @@ export default function PlatformDashboard() {
                 <tr key={t.id} className="border-t border-ink/10">
                   <td className="py-2 pr-4 font-medium text-ink">{t.company_name}</td>
                   <td className="py-2 pr-4 text-ink/60 capitalize">{t.subscription_plan}</td>
-                  <td className="py-2 pr-4">
+                  <td className="py-2">
                     <span className={`record-tag ${t.is_active ? 'text-brand-600' : 'text-rust-500'}`}>
-                      {t.is_active ? 'active' : 'suspended'}
+                      {t.is_active ? 'active' : 'pending'}
                     </span>
                   </td>
-                  <td className="py-2 pr-4 font-mono">{t.plot_count}</td>
-                  <td className="py-2 pr-4 font-mono">{t.booking_count}</td>
-                  <td className="py-2 font-mono">{t.staff_count}</td>
                 </tr>
               ))}
             </tbody>

@@ -23,6 +23,17 @@ async def login(form: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = 
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated")
 
+    # Platform admin's own pseudo-tenant is always active by definition —
+    # only check tenant status for real promoters.
+    if user.role != UserRole.PLATFORM_ADMIN:
+        tenant_result = await db.execute(select(Tenant).where(Tenant.id == user.tenant_id))
+        tenant = tenant_result.scalar_one_or_none()
+        if not tenant or not tenant.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account is pending approval by OS2 Studio. Please contact support.",
+            )
+
     token = create_access_token({"sub": str(user.id), "tenant_id": str(user.tenant_id)})
     return Token(access_token=token)
 

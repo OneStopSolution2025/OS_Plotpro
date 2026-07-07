@@ -46,6 +46,7 @@ async def onboard_tenant(
         country=payload.country,
         currency=payload.currency,
         subscription_plan=SubscriptionPlan.TRIAL,
+        is_active=False,  # pending approval — Supreme Admin activates from All Promoters
     )
     db.add(tenant)
     await db.flush()  # get tenant.id before creating the admin user
