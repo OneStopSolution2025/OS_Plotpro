@@ -24,6 +24,7 @@ class TenantOnboard(BaseModel):
     currency: str = "INR"
     admin_full_name: str
     admin_password: str
+    subscription_plan: SubscriptionPlan = SubscriptionPlan.TRIAL
 
 
 @router.post("/onboard", status_code=status.HTTP_201_CREATED)
@@ -66,7 +67,7 @@ async def _create_tenant_and_admin(payload: "TenantOnboard", db: AsyncSession):
         contact_phone=payload.contact_phone,
         country=payload.country,
         currency=payload.currency,
-        subscription_plan=SubscriptionPlan.TRIAL,
+        subscription_plan=payload.subscription_plan,
         is_active=False,  # pending approval — Supreme Admin activates from All Promoters
     )
     db.add(tenant)
