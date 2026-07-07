@@ -26,11 +26,12 @@ export default function Staff() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">Staff</h1>
+      <p className="font-mono text-xs uppercase tracking-widest text-brand-600 mb-1">Team</p>
+      <h1 className="font-display text-3xl font-semibold text-ink mb-4">Staff</h1>
 
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+      <div className="doc-card overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-left">
+          <thead className="bg-ink/5 text-ink/50 text-left font-mono text-xs uppercase tracking-wide">
             <tr>
               <th className="px-4 py-2">Name</th>
               <th className="px-4 py-2">Role</th>
@@ -42,11 +43,11 @@ export default function Staff() {
           <tbody>
             {staff.map((s) => (
               <>
-                <tr key={s.id} className="border-t border-gray-100">
-                  <td className="px-4 py-2 font-medium text-gray-900">{s.full_name}</td>
-                  <td className="px-4 py-2 text-gray-600">{s.role}</td>
-                  <td className="px-4 py-2 text-gray-600">{s.monthly_target ?? '-'}</td>
-                  <td className="px-4 py-2 text-gray-600">{s.commission_percent ?? '-'}</td>
+                <tr key={s.id} className="border-t border-ink/10">
+                  <td className="px-4 py-2 font-medium text-ink">{s.full_name}</td>
+                  <td className="px-4 py-2 text-ink/60">{s.role}</td>
+                  <td className="px-4 py-2 text-ink/60">{s.monthly_target ?? '-'}</td>
+                  <td className="px-4 py-2 text-ink/60">{s.commission_percent ?? '-'}</td>
                   <td className="px-4 py-2 space-x-3">
                     <button onClick={() => setTarget(s.id)} className="text-xs text-brand-700 hover:underline">Set target</button>
                     <button onClick={() => viewPerformance(s.id)} className="text-xs text-brand-700 hover:underline">Performance</button>
@@ -54,7 +55,7 @@ export default function Staff() {
                 </tr>
                 {performance[s.id] && (
                   <tr className="bg-gray-50">
-                    <td colSpan="5" className="px-4 py-2 text-xs text-gray-600">
+                    <td colSpan="5" className="px-4 py-2 text-xs text-ink/60">
                       Bookings: {performance[s.id].total_bookings} · Sales value: ₹{performance[s.id].total_sales_value.toLocaleString('en-IN')} · Commission earned: ₹{performance[s.id].commission_earned.toLocaleString('en-IN')}
                     </td>
                   </tr>
@@ -62,7 +63,7 @@ export default function Staff() {
               </>
             ))}
             {staff.length === 0 && (
-              <tr><td colSpan="5" className="px-4 py-6 text-center text-gray-400">No staff yet</td></tr>
+              <tr><td colSpan="5" className="px-4 py-6 text-center text-ink/40">No staff yet</td></tr>
             )}
           </tbody>
         </table>

@@ -37,36 +37,37 @@ export default function Bookings() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">Bookings</h1>
+      <p className="font-mono text-xs uppercase tracking-widest text-brand-600 mb-1">Sales</p>
+      <h1 className="font-display text-3xl font-semibold text-ink mb-4">Bookings</h1>
 
       {!open ? (
         <button onClick={() => setOpen(true)} className="text-sm text-brand-700 font-medium hover:underline mb-4">
           + New booking
         </button>
       ) : (
-        <form onSubmit={submit} className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap gap-2 mb-4 items-end">
+        <form onSubmit={submit} className="bg-white border doc-card p-4 flex flex-wrap gap-2 mb-4 items-end">
           <select required value={form.plot_id} onChange={(e) => setForm({ ...form, plot_id: e.target.value })}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            className="border border-ink/15 px-3 py-2 text-sm">
             <option value="">Select available plot</option>
             {plots.map((p) => <option key={p.id} value={p.id}>{p.plot_number} — ₹{p.total_price.toLocaleString('en-IN')}</option>)}
           </select>
           <input placeholder="Customer name" required value={form.customer_name}
             onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+            className="border border-ink/15 px-3 py-2 text-sm" />
           <input placeholder="Phone" required value={form.customer_phone}
             onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+            className="border border-ink/15 px-3 py-2 text-sm" />
           <input placeholder="Token advance" type="number" value={form.token_advance}
             onChange={(e) => setForm({ ...form, token_advance: e.target.value })}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-32" />
-          <button type="submit" className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm">Book</button>
+            className="border border-ink/15 px-3 py-2 text-sm w-32" />
+          <button type="submit" className="bg-brand-600 text-white px-4 py-2 text-sm">Book</button>
           <button type="button" onClick={() => setOpen(false)} className="text-sm text-gray-500 px-2">Cancel</button>
         </form>
       )}
 
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+      <div className="doc-card overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-left">
+          <thead className="bg-ink/5 text-ink/50 text-left font-mono text-xs uppercase tracking-wide">
             <tr>
               <th className="px-4 py-2">Booking ID</th>
               <th className="px-4 py-2">Total Price</th>
@@ -77,24 +78,24 @@ export default function Bookings() {
           </thead>
           <tbody>
             {bookings.map((b) => (
-              <tr key={b.id} className="border-t border-gray-100">
-                <td className="px-4 py-2 text-gray-500 font-mono text-xs">{b.id.slice(0, 8)}</td>
-                <td className="px-4 py-2 text-gray-900">₹{b.total_price.toLocaleString('en-IN')}</td>
-                <td className="px-4 py-2 text-gray-600">₹{b.token_advance.toLocaleString('en-IN')}</td>
+              <tr key={b.id} className="border-t border-ink/10">
+                <td className="px-4 py-2 text-ink/50 font-mono text-xs">{b.id.slice(0, 8)}</td>
+                <td className="px-4 py-2 text-ink font-mono">₹{b.total_price.toLocaleString('en-IN')}</td>
+                <td className="px-4 py-2 text-ink/60 font-mono">₹{b.token_advance.toLocaleString('en-IN')}</td>
                 <td className="px-4 py-2">
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    b.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
+                  <span className={`record-tag ${
+                    b.status === 'cancelled' ? 'text-rust-500' : 'text-brand-600'
                   }`}>{b.status}</span>
                 </td>
                 <td className="px-4 py-2">
                   {b.status !== 'cancelled' && (
-                    <button onClick={() => cancelBooking(b.id)} className="text-xs text-red-600 hover:underline">Cancel</button>
+                    <button onClick={() => cancelBooking(b.id)} className="text-xs text-rust-500 hover:underline">Cancel</button>
                   )}
                 </td>
               </tr>
             ))}
             {bookings.length === 0 && (
-              <tr><td colSpan="5" className="px-4 py-6 text-center text-gray-400">No bookings yet</td></tr>
+              <tr><td colSpan="5" className="px-4 py-6 text-center text-ink/40">No bookings yet</td></tr>
             )}
           </tbody>
         </table>

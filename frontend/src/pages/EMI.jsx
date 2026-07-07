@@ -47,7 +47,8 @@ export default function EMI() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">EMI &amp; Payments</h1>
+      <p className="font-mono text-xs uppercase tracking-widest text-brand-600 mb-1">Billing</p>
+      <h1 className="font-display text-3xl font-semibold text-ink mb-4">EMI &amp; Payments</h1>
 
       <select value={selected} onChange={(e) => loadDetails(e.target.value)}
         className="border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4">
@@ -97,9 +98,9 @@ export default function EMI() {
                         <td className="px-4 py-2">{s.due_date}</td>
                         <td className="px-4 py-2">₹{s.amount_due.toLocaleString('en-IN')}</td>
                         <td className="px-4 py-2">
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            s.status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
-                            s.status === 'overdue' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
+                          <span className={`record-tag ${
+                            s.status === 'paid' ? 'text-brand-600' :
+                            s.status === 'overdue' ? 'text-rust-500' : 'text-ink/50'
                           }`}>{s.status}</span>
                         </td>
                       </tr>
@@ -129,14 +130,14 @@ export default function EMI() {
             </form>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-2xl p-5 h-fit">
-            <h2 className="font-semibold text-gray-900 mb-3">Ledger snapshot</h2>
+          <div className="doc-card p-5 h-fit">
+            <h2 className="font-display font-semibold text-ink mb-3">Ledger snapshot</h2>
             {ledger && (
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-gray-500">Total scheduled</span><span>₹{ledger.total_scheduled.toLocaleString('en-IN')}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Total paid</span><span className="text-emerald-600">₹{ledger.total_paid.toLocaleString('en-IN')}</span></div>
-                <div className="flex justify-between font-medium"><span>Balance</span><span>₹{ledger.balance.toLocaleString('en-IN')}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Overdue installments</span><span className="text-red-600">{ledger.overdue_installments}</span></div>
+              <div className="space-y-2 text-sm font-mono">
+                <div className="flex justify-between"><span className="text-ink/50 font-sans">Total scheduled</span><span>₹{ledger.total_scheduled.toLocaleString('en-IN')}</span></div>
+                <div className="flex justify-between"><span className="text-ink/50 font-sans">Total paid</span><span className="text-brand-600">₹{ledger.total_paid.toLocaleString('en-IN')}</span></div>
+                <div className="flex justify-between font-medium border-t border-ink/10 pt-2"><span className="font-sans">Balance</span><span>₹{ledger.balance.toLocaleString('en-IN')}</span></div>
+                <div className="flex justify-between"><span className="text-ink/50 font-sans">Overdue installments</span><span className="text-rust-500">{ledger.overdue_installments}</span></div>
               </div>
             )}
           </div>

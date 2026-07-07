@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import api from '../api/client'
 
 const STATUS_COLORS = {
-  available: 'bg-emerald-500',
-  hold: 'bg-amber-500',
-  booked: 'bg-orange-500',
-  sold: 'bg-red-500',
-  registered: 'bg-gray-500',
+  available: 'bg-brand-600',
+  hold: 'bg-brass-500',
+  booked: 'bg-rust-500',
+  sold: 'bg-ink',
+  registered: 'bg-ink/50',
 }
 
 function NewProjectForm({ onCreated }) {
@@ -107,7 +107,8 @@ export default function Projects() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">Projects &amp; Plots</h1>
+      <p className="font-mono text-xs uppercase tracking-widest text-brand-600 mb-1">Inventory</p>
+      <h1 className="font-display text-3xl font-semibold text-ink mb-4">Projects &amp; Plots</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Project list */}
@@ -118,36 +119,36 @@ export default function Projects() {
               <button
                 key={p.id}
                 onClick={() => setSelectedProject(p)}
-                className={`w-full text-left p-3 rounded-xl border transition ${
-                  selectedProject?.id === p.id ? 'border-brand-500 bg-brand-50' : 'border-gray-200 bg-white hover:border-gray-300'
+                className={`w-full text-left p-3 border transition ${
+                  selectedProject?.id === p.id ? 'border-brand-600 bg-brand-50' : 'border-ink/10 bg-white hover:border-ink/25'
                 }`}
               >
-                <p className="font-medium text-gray-900 text-sm">{p.name}</p>
-                <p className="text-xs text-gray-500">{p.location || 'No location set'}</p>
+                <p className="font-medium text-ink text-sm">{p.name}</p>
+                <p className="text-xs text-ink/50">{p.location || 'No location set'}</p>
               </button>
             ))}
-            {projects.length === 0 && <p className="text-sm text-gray-400">No projects yet — create one to get started.</p>}
+            {projects.length === 0 && <p className="text-sm text-ink/40">No projects yet — create one to get started.</p>}
           </div>
         </div>
 
         {/* Plot grid for selected project */}
         <div className="lg:col-span-2">
           {!selectedProject ? (
-            <div className="bg-white border border-gray-200 rounded-2xl p-10 text-center text-gray-400 text-sm">
+            <div className="doc-card p-10 text-center text-ink/40 text-sm">
               Select a project to view and manage its plots.
             </div>
           ) : (
-            <div className="bg-white border border-gray-200 rounded-2xl p-5">
+            <div className="doc-card p-5 grid-paper">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="font-semibold text-gray-900">{selectedProject.name} — plots</h2>
+                <h2 className="font-display font-semibold text-ink">{selectedProject.name} — plots</h2>
                 <NewPlotForm projectId={selectedProject.id} onCreated={() => loadPlots(selectedProject.id)} />
               </div>
 
               {/* Legend */}
-              <div className="flex gap-4 mb-4 text-xs text-gray-500">
+              <div className="flex gap-4 mb-4 text-xs text-ink/60 font-mono">
                 {Object.entries(STATUS_COLORS).map(([status, color]) => (
                   <div key={status} className="flex items-center gap-1.5">
-                    <span className={`w-2.5 h-2.5 rounded-full ${color}`} />
+                    <span className={`w-2.5 h-2.5 ${color}`} />
                     {status}
                   </div>
                 ))}
@@ -181,24 +182,24 @@ function PlotCell({ plot, onUpdated }) {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full aspect-square rounded-lg text-white text-xs font-semibold flex flex-col items-center justify-center ${STATUS_COLORS[plot.status]}`}
+        className={`w-full aspect-square text-white font-mono flex flex-col items-center justify-center border border-black/10 ${STATUS_COLORS[plot.status]}`}
         title={`Plot ${plot.plot_number} — ${plot.extent_sqft} sqft`}
       >
-        <span>{plot.plot_number}</span>
+        <span className="text-xs font-medium">{plot.plot_number}</span>
         <span className="text-[10px] opacity-80">{plot.extent_sqft} sqft</span>
       </button>
 
       {open && (
-        <div className="absolute z-10 top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-48 text-xs">
-          <p className="font-medium text-gray-900 mb-1">Plot {plot.plot_number}</p>
-          <p className="text-gray-500 mb-2">₹{plot.total_price.toLocaleString('en-IN')}</p>
-          <p className="text-gray-400 mb-2">Change status:</p>
+        <div className="absolute z-10 top-full mt-1 left-0 doc-card p-3 w-48 text-xs shadow-lg">
+          <p className="font-mono font-medium text-ink mb-1">Plot {plot.plot_number}</p>
+          <p className="font-mono text-ink/60 mb-2">₹{plot.total_price.toLocaleString('en-IN')}</p>
+          <p className="text-ink/40 mb-2 uppercase tracking-wide text-[10px]">Change status:</p>
           <div className="flex flex-wrap gap-1">
             {Object.keys(STATUS_COLORS).map((s) => (
               <button
                 key={s}
                 onClick={() => changeStatus(s)}
-                className={`px-2 py-1 rounded ${STATUS_COLORS[s]} text-white text-[10px]`}
+                className={`px-2 py-1 ${STATUS_COLORS[s]} text-white text-[10px] font-mono`}
               >
                 {s}
               </button>

@@ -25,39 +25,40 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white shadow-sm border border-gray-200 rounded-2xl p-8 w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-brand-700 mb-1">OS2 PlotPro</h1>
-        <p className="text-sm text-gray-500 mb-6">Sign in to your admin account</p>
+    <div className="min-h-screen flex items-center justify-center bg-ink grid-paper">
+      <div className="doc-card p-9 w-full max-w-sm shadow-xl">
+        <p className="font-mono text-[11px] tracking-widest uppercase text-brass-600 mb-1">Admin Access</p>
+        <h1 className="font-display text-3xl font-semibold text-ink mb-1">OS2 PlotPro</h1>
+        <p className="text-sm text-ink/60 mb-7">Sign in to your promoter account</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-gray-700">Email</label>
+            <label className="text-xs font-medium text-ink/70 uppercase tracking-wide">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="mt-1.5 w-full border border-ink/15 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Password</label>
+            <label className="text-xs font-medium text-ink/70 uppercase tracking-wide">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="mt-1.5 w-full border border-ink/15 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
             />
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-rust-500 font-medium">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2 rounded-lg transition disabled:opacity-60"
+            className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 transition disabled:opacity-60"
           >
             {loading ? 'Signing in...' : 'Sign in'}
           </button>

@@ -20,18 +20,18 @@ function NewEnquiryForm({ onCreated }) {
   }
 
   return (
-    <form onSubmit={submit} className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap gap-2 mb-4 items-end">
+    <form onSubmit={submit} className="bg-white border doc-card p-4 flex flex-wrap gap-2 mb-4 items-end">
       <input placeholder="Customer name" required value={form.customer_name}
         onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
-        className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+        className="border border-ink/15 px-3 py-2 text-sm" />
       <input placeholder="Phone" required value={form.customer_phone}
         onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}
-        className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+        className="border border-ink/15 px-3 py-2 text-sm" />
       <select value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })}
-        className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+        className="border border-ink/15 px-3 py-2 text-sm">
         {['phone', 'walk_in', 'website', 'referral', 'social_media'].map((s) => <option key={s} value={s}>{s}</option>)}
       </select>
-      <button type="submit" className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm">Save</button>
+      <button type="submit" className="bg-brand-600 text-white px-4 py-2 text-sm">Save</button>
       <button type="button" onClick={() => setOpen(false)} className="text-sm text-gray-500 px-2">Cancel</button>
     </form>
   )
@@ -50,12 +50,13 @@ export default function Enquiries() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">Enquiries</h1>
+      <p className="font-mono text-xs uppercase tracking-widest text-brand-600 mb-1">CRM</p>
+      <h1 className="font-display text-3xl font-semibold text-ink mb-4">Enquiries</h1>
       <NewEnquiryForm onCreated={load} />
 
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+      <div className="doc-card overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-left">
+          <thead className="bg-ink/5 text-ink/50 text-left font-mono text-xs uppercase tracking-wide">
             <tr>
               <th className="px-4 py-2">Customer</th>
               <th className="px-4 py-2">Phone</th>
@@ -65,10 +66,10 @@ export default function Enquiries() {
           </thead>
           <tbody>
             {enquiries.map((e) => (
-              <tr key={e.id} className="border-t border-gray-100">
-                <td className="px-4 py-2 font-medium text-gray-900">{e.customer_name}</td>
-                <td className="px-4 py-2 text-gray-600">{e.customer_phone}</td>
-                <td className="px-4 py-2 text-gray-600">{e.source}</td>
+              <tr key={e.id} className="border-t border-ink/10">
+                <td className="px-4 py-2 font-medium text-ink">{e.customer_name}</td>
+                <td className="px-4 py-2 text-ink/60">{e.customer_phone}</td>
+                <td className="px-4 py-2 text-ink/60">{e.source}</td>
                 <td className="px-4 py-2">
                   <select
                     value={e.stage}
@@ -81,7 +82,7 @@ export default function Enquiries() {
               </tr>
             ))}
             {enquiries.length === 0 && (
-              <tr><td colSpan="4" className="px-4 py-6 text-center text-gray-400">No enquiries yet</td></tr>
+              <tr><td colSpan="4" className="px-4 py-6 text-center text-ink/40">No enquiries yet</td></tr>
             )}
           </tbody>
         </table>

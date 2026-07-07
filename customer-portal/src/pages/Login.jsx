@@ -41,43 +41,44 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="bg-white shadow-sm border border-gray-200 rounded-2xl p-8 w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-brand-700 mb-1">My Plot</h1>
-        <p className="text-sm text-gray-500 mb-6">
+    <div className="min-h-screen flex items-center justify-center bg-ink grid-paper px-4">
+      <div className="doc-card p-9 w-full max-w-sm shadow-xl">
+        <p className="font-mono text-[11px] tracking-widest uppercase text-brass-600 mb-1">Customer Portal</p>
+        <h1 className="font-display text-3xl font-semibold text-ink mb-1">My Plot</h1>
+        <p className="text-sm text-ink/60 mb-7">
           {step === 'phone' ? 'Sign in with your registered phone number' : 'Enter the OTP sent to your phone'}
         </p>
 
         {step === 'phone' ? (
           <form onSubmit={sendOtp} className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-700">Promoter code</label>
+              <label className="text-xs font-medium text-ink/70 uppercase tracking-wide">Promoter code</label>
               <input
                 value={subdomain}
                 onChange={(e) => setSubdomain(e.target.value)}
                 required
                 placeholder="e.g. dreamcity"
-                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="mt-1.5 w-full border border-ink/15 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
               />
-              <p className="text-xs text-gray-400 mt-1">Given to you by your plot promoter</p>
+              <p className="text-xs text-ink/40 mt-1">Given to you by your plot promoter</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Phone number</label>
+              <label className="text-xs font-medium text-ink/70 uppercase tracking-wide">Phone number</label>
               <input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
                 placeholder="+91XXXXXXXXXX"
-                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="mt-1.5 w-full border border-ink/15 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
               />
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-rust-500 font-medium">{error}</p>}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2 rounded-lg transition disabled:opacity-60"
+              className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 transition disabled:opacity-60"
             >
               {loading ? 'Sending...' : 'Send OTP'}
             </button>
@@ -85,30 +86,30 @@ export default function Login() {
         ) : (
           <form onSubmit={confirmOtp} className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-700">OTP code</label>
+              <label className="text-xs font-medium text-ink/70 uppercase tracking-wide">OTP code</label>
               <input
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
                 required
                 maxLength={6}
                 placeholder="6-digit code"
-                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm tracking-widest text-center focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="mt-1.5 w-full border border-ink/15 px-3 py-2 text-sm font-mono tracking-[0.3em] text-center focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
               />
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-rust-500 font-medium">{error}</p>}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2 rounded-lg transition disabled:opacity-60"
+              className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 transition disabled:opacity-60"
             >
               {loading ? 'Verifying...' : 'Verify & sign in'}
             </button>
             <button
               type="button"
               onClick={() => setStep('phone')}
-              className="w-full text-sm text-gray-500 hover:underline"
+              className="w-full text-sm text-ink/50 hover:underline"
             >
               Change phone number
             </button>

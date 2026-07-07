@@ -3,10 +3,10 @@ import { useParams, Link } from 'react-router-dom'
 import api from '../api/client'
 
 const INSTALLMENT_COLORS = {
-  paid: 'bg-emerald-100 text-emerald-700',
-  pending: 'bg-gray-100 text-gray-600',
-  overdue: 'bg-red-100 text-red-700',
-  waived: 'bg-blue-100 text-blue-700',
+  paid: 'text-brand-600',
+  pending: 'text-ink/50',
+  overdue: 'text-rust-500',
+  waived: 'text-brass-600',
 }
 
 export default function Ledger() {
@@ -22,32 +22,33 @@ export default function Ledger() {
       .finally(() => setLoading(false))
   }, [bookingId])
 
-  if (loading) return <div className="p-6 text-gray-500 text-sm">Loading...</div>
-  if (error) return <div className="p-6 text-red-600 text-sm">{error}</div>
+  if (loading) return <div className="p-6 text-ink/50 text-sm">Loading...</div>
+  if (error) return <div className="p-6 text-rust-500 text-sm">{error}</div>
 
   const totalDue = data.installments.reduce((sum, i) => sum + i.amount_due, 0)
   const totalPaid = data.payments.reduce((sum, p) => sum + p.amount, 0)
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <Link to="/" className="text-sm text-brand-700 hover:underline">← Back to my plots</Link>
-      <h1 className="text-xl font-bold text-gray-900 mt-2 mb-4">EMI Schedule & Payments</h1>
+    <div className="p-6 max-w-3xl mx-auto bg-parchment min-h-[calc(100vh-64px)]">
+      <Link to="/" className="text-sm text-brand-600 hover:underline">← Back to my plots</Link>
+      <p className="font-mono text-xs uppercase tracking-widest text-brand-600 mt-3 mb-1">Booking Detail</p>
+      <h1 className="font-display text-2xl font-semibold text-ink mb-4">EMI Schedule & Payments</h1>
 
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-xs text-gray-500">Total Scheduled</p>
-          <p className="text-lg font-semibold text-gray-900">₹{totalDue.toLocaleString('en-IN')}</p>
+        <div className="doc-card p-4">
+          <p className="text-xs font-mono uppercase tracking-widest text-ink/50">Total Scheduled</p>
+          <p className="text-lg font-mono font-medium text-ink mt-1">₹{totalDue.toLocaleString('en-IN')}</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-xs text-gray-500">Total Paid</p>
-          <p className="text-lg font-semibold text-emerald-600">₹{totalPaid.toLocaleString('en-IN')}</p>
+        <div className="doc-card p-4">
+          <p className="text-xs font-mono uppercase tracking-widest text-ink/50">Total Paid</p>
+          <p className="text-lg font-mono font-medium text-brand-600 mt-1">₹{totalPaid.toLocaleString('en-IN')}</p>
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden mb-6">
-        <div className="px-5 py-3 border-b border-gray-100 font-medium text-gray-900 text-sm">Installment Schedule</div>
+      <div className="doc-card overflow-hidden mb-6">
+        <div className="px-5 py-3 border-b border-ink/10 font-display font-medium text-ink text-sm">Installment Schedule</div>
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-left">
+          <thead className="bg-ink/5 text-ink/50 text-left font-mono text-xs uppercase tracking-wide">
             <tr>
               <th className="px-5 py-2">#</th>
               <th className="px-5 py-2">Due date</th>
@@ -55,46 +56,46 @@ export default function Ledger() {
               <th className="px-5 py-2">Status</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="font-mono">
             {data.installments.map((i) => (
-              <tr key={i.number} className="border-t border-gray-100">
+              <tr key={i.number} className="border-t border-ink/10">
                 <td className="px-5 py-2">{i.number}</td>
                 <td className="px-5 py-2">{i.due_date}</td>
                 <td className="px-5 py-2">₹{i.amount_due.toLocaleString('en-IN')}</td>
                 <td className="px-5 py-2">
-                  <span className={`text-xs px-2 py-1 rounded-full ${INSTALLMENT_COLORS[i.status] || ''}`}>
+                  <span className={`record-tag ${INSTALLMENT_COLORS[i.status] || ''}`}>
                     {i.status}
                   </span>
                 </td>
               </tr>
             ))}
             {data.installments.length === 0 && (
-              <tr><td colSpan="4" className="px-5 py-6 text-center text-gray-400">No schedule generated yet</td></tr>
+              <tr><td colSpan="4" className="px-5 py-6 text-center text-ink/40 font-sans">No schedule generated yet</td></tr>
             )}
           </tbody>
         </table>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100 font-medium text-gray-900 text-sm">Payment History</div>
+      <div className="doc-card overflow-hidden">
+        <div className="px-5 py-3 border-b border-ink/10 font-display font-medium text-ink text-sm">Payment History</div>
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-left">
+          <thead className="bg-ink/5 text-ink/50 text-left font-mono text-xs uppercase tracking-wide">
             <tr>
               <th className="px-5 py-2">Receipt No.</th>
               <th className="px-5 py-2">Amount</th>
               <th className="px-5 py-2">Mode</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="font-mono">
             {data.payments.map((p, idx) => (
-              <tr key={idx} className="border-t border-gray-100">
-                <td className="px-5 py-2 font-mono text-xs">{p.receipt_number}</td>
+              <tr key={idx} className="border-t border-ink/10">
+                <td className="px-5 py-2 text-xs">{p.receipt_number}</td>
                 <td className="px-5 py-2">₹{p.amount.toLocaleString('en-IN')}</td>
-                <td className="px-5 py-2 text-gray-600">{p.mode}</td>
+                <td className="px-5 py-2 text-ink/60">{p.mode}</td>
               </tr>
             ))}
             {data.payments.length === 0 && (
-              <tr><td colSpan="3" className="px-5 py-6 text-center text-gray-400">No payments recorded yet</td></tr>
+              <tr><td colSpan="3" className="px-5 py-6 text-center text-ink/40 font-sans">No payments recorded yet</td></tr>
             )}
           </tbody>
         </table>

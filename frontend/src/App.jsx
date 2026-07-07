@@ -14,7 +14,7 @@ function AdminLayout({ children }) {
   return (
     <div className="flex">
       <Sidebar />
-      <main className="flex-1 p-8 h-screen overflow-y-auto">{children}</main>
+      <main className="flex-1 p-8 h-screen overflow-y-auto bg-parchment">{children}</main>
     </div>
   )
 }
