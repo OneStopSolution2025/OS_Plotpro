@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import api from '../api/client'
+import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { errorMessage } from '../utils/errors'
 
@@ -23,6 +24,7 @@ const STATUS_CHART_COLORS = {
 }
 
 export default function Dashboard() {
+  const { user } = useAuth()
   const [stats, setStats] = useState({ plots: 0, enquiries: 0, bookings: 0, available: 0 })
   const [statusBreakdown, setStatusBreakdown] = useState([])
   const [salesTrend, setSalesTrend] = useState([])

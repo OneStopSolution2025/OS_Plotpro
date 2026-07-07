@@ -32,12 +32,21 @@ class PlotCreate(BaseModel):
     corner_premium: float = 0.0
     map_x_percent: float | None = None
     map_y_percent: float | None = None
+    description: str | None = None
+    amenities: str | None = None
+    patta_number: str | None = None
+    google_maps_link: str | None = None
 
 
 class PlotUpdate(BaseModel):
     price_per_sqft: float | None = None
     corner_premium: float | None = None
     status: PlotStatus | None = None
+    description: str | None = None
+    amenities: str | None = None
+    patta_number: str | None = None
+    google_maps_link: str | None = None
+    image_url: str | None = None
 
 
 class PlotOut(BaseModel):
@@ -46,11 +55,19 @@ class PlotOut(BaseModel):
     plot_number: str
     extent_sqft: float
     facing: str | None
+    road_width_ft: float | None
     is_corner: bool
     price_per_sqft: float
     corner_premium: float
     status: PlotStatus
     total_price: float
+    image_url: str | None = None
+    description: str | None = None
+    amenities: str | None = None
+    patta_number: str | None = None
+    google_maps_link: str | None = None
+    map_x_percent: float | None = None
+    map_y_percent: float | None = None
 
     class Config:
         from_attributes = True

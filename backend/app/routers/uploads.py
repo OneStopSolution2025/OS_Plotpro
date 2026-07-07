@@ -8,7 +8,7 @@ from sqlalchemy import select
 from app.core.database import get_db
 from app.core.deps import get_current_user, get_tenant_id, require_roles
 from app.models.user import User, UserRole
-from app.models.plot import Project
+from app.models.plot import Project, Plot
 from app.models.document import LegalDocument, DocumentType
 
 router = APIRouter(prefix="/api/uploads", tags=["file uploads"])
@@ -104,3 +104,41 @@ async def list_legal_documents(
         }
         for d in docs
     ]
+
+
+@router.delete("/legal-document/{document_id}")
+async def delete_legal_document(
+    document_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    _user: User = Depends(require_roles(UserRole.ORG_ADMIN, UserRole.ACCOUNTANT)),
+):
+    result = await db.execute(select(LegalDocument).where(LegalDocument.id == document_id, LegalDocument.tenant_id == tenant_id))
+    doc = result.scalar_one_or_none()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    await db.delete(doc)
+    await db.commit()
+    return {"status": "deleted"}
+
+
+@router.post("/plot-image/{plot_id}")
+async def upload_plot_image(
+    plot_id: uuid.UUID,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    _user: User = Depends(require_roles(UserRole.ORG_ADMIN, UserRole.SALES_MANAGER)),
+):
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=400, detail="Image must be JPEG, PNG, or WebP")
+
+    result = await db.execute(select(Plot).where(Plot.id == plot_id, Plot.tenant_id == tenant_id))
+    plot = result.scalar_one_or_none()
+    if not plot:
+        raise HTTPException(status_code=404, detail="Plot not found")
+
+    url = _save_file(file, f"plot-images/{tenant_id}")
+    plot.image_url = url
+    await db.commit()
+    return {"image_url": url}

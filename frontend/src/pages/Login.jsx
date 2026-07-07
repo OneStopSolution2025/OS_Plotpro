@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { LogIn } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
@@ -27,6 +28,7 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-ink grid-paper">
       <div className="doc-card p-9 w-full max-w-sm shadow-xl">
+        <div className="w-10 h-10 bg-brand-600 flex items-center justify-center font-display font-bold text-white text-lg mb-4">P</div>
         <p className="font-mono text-[11px] tracking-widest uppercase text-brass-600 mb-1">Admin Access</p>
         <h1 className="font-display text-3xl font-semibold text-ink mb-1">OS2 PlotPro</h1>
         <p className="text-sm text-ink/60 mb-7">Sign in to your promoter account</p>
@@ -58,8 +60,9 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 transition disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 transition disabled:opacity-60"
           >
+            <LogIn size={16} />
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>

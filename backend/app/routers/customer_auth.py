@@ -83,8 +83,12 @@ async def verify_otp(payload: OTPVerify, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/me", response_model=CustomerMeOut)
-async def customer_me(customer: Customer = Depends(get_current_customer)):
-    return customer
+async def customer_me(customer: Customer = Depends(get_current_customer), db: AsyncSession = Depends(get_db)):
+    tenant_result = await db.execute(select(Tenant).where(Tenant.id == customer.tenant_id))
+    tenant = tenant_result.scalar_one_or_none()
+    out = CustomerMeOut.model_validate(customer)
+    out.tenant_currency = tenant.currency if tenant else "INR"
+    return out
 
 
 @router.get("/my-bookings")
@@ -92,17 +96,83 @@ async def my_bookings(
     customer: Customer = Depends(get_current_customer),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.models.plot import Plot, Project
+
     result = await db.execute(select(Booking).where(Booking.customer_id == customer.id))
     bookings = result.scalars().all()
-    return [
-        {
+
+    out = []
+    for b in bookings:
+        plot_result = await db.execute(select(Plot).where(Plot.id == b.plot_id))
+        plot = plot_result.scalar_one_or_none()
+        project = None
+        if plot:
+            proj_result = await db.execute(select(Project).where(Project.id == plot.project_id))
+            project = proj_result.scalar_one_or_none()
+        out.append({
             "id": str(b.id),
             "plot_id": str(b.plot_id),
+            "plot_number": plot.plot_number if plot else None,
+            "project_name": project.name if project else None,
+            "extent_sqft": plot.extent_sqft if plot else None,
+            "image_url": plot.image_url if plot else None,
             "total_price": b.total_price,
             "status": b.status,
-        }
-        for b in bookings
-    ]
+        })
+    return out
+
+
+@router.get("/booking-detail/{booking_id}")
+async def booking_detail(
+    booking_id: uuid.UUID,
+    customer: Customer = Depends(get_current_customer),
+    db: AsyncSession = Depends(get_db),
+):
+    """Full detail for the sale agreement view — booking, plot, project,
+    and customer info in one call."""
+    from app.models.plot import Plot, Project
+
+    booking_result = await db.execute(
+        select(Booking).where(Booking.id == booking_id, Booking.customer_id == customer.id)
+    )
+    booking = booking_result.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    plot_result = await db.execute(select(Plot).where(Plot.id == booking.plot_id))
+    plot = plot_result.scalar_one_or_none()
+    project = None
+    if plot:
+        proj_result = await db.execute(select(Project).where(Project.id == plot.project_id))
+        project = proj_result.scalar_one_or_none()
+
+    return {
+        "booking": {
+            "id": str(booking.id),
+            "status": booking.status,
+            "total_price": booking.total_price,
+            "token_advance": booking.token_advance,
+            "created_at": booking.created_at,
+        },
+        "plot": {
+            "plot_number": plot.plot_number if plot else None,
+            "extent_sqft": plot.extent_sqft if plot else None,
+            "facing": plot.facing if plot else None,
+            "patta_number": plot.patta_number if plot else None,
+        } if plot else None,
+        "project": {
+            "name": project.name if project else None,
+            "location": project.location if project else None,
+            "survey_number": project.survey_number if project else None,
+            "dtcp_approval_no": project.dtcp_approval_no if project else None,
+            "rera_reg_no": project.rera_reg_no if project else None,
+        } if project else None,
+        "customer": {
+            "full_name": customer.full_name,
+            "phone": customer.phone,
+            "address": customer.address,
+        },
+    }
 
 
 @router.get("/my-ledger/{booking_id}")

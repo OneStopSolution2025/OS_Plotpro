@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react'
 import api from '../api/client'
+import { formatMoney } from '../utils/currency'
+import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { errorMessage } from '../utils/errors'
 
 export default function Bookings() {
+  const { user } = useAuth()
+  const currency = user?.tenant_currency || 'INR'
   const [bookings, setBookings] = useState([])
   const [plots, setPlots] = useState([])
   const [search, setSearch] = useState('')
@@ -78,7 +82,7 @@ export default function Bookings() {
           <select required value={form.plot_id} onChange={(e) => setForm({ ...form, plot_id: e.target.value })}
             className="border border-ink/15 px-3 py-2 text-sm">
             <option value="">Select available plot</option>
-            {plots.map((p) => <option key={p.id} value={p.id}>{p.plot_number} — ₹{p.total_price.toLocaleString('en-IN')}</option>)}
+            {plots.map((p) => <option key={p.id} value={p.id}>{p.plot_number} — {formatMoney(p.total_price, currency)}</option>)}
           </select>
           <input placeholder="Customer name" required value={form.customer_name}
             onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
@@ -109,8 +113,8 @@ export default function Bookings() {
             {bookings.map((b) => (
               <tr key={b.id} className="border-t border-ink/10">
                 <td className="px-4 py-2 text-ink/50 font-mono text-xs">{b.id.slice(0, 8)}</td>
-                <td className="px-4 py-2 text-ink font-mono">₹{b.total_price.toLocaleString('en-IN')}</td>
-                <td className="px-4 py-2 text-ink/60 font-mono">₹{b.token_advance.toLocaleString('en-IN')}</td>
+                <td className="px-4 py-2 text-ink font-mono">{formatMoney(b.total_price, currency)}</td>
+                <td className="px-4 py-2 text-ink/60 font-mono">{formatMoney(b.token_advance, currency)}</td>
                 <td className="px-4 py-2">
                   <span className={`record-tag ${
                     b.status === 'cancelled' ? 'text-rust-500' : 'text-brand-600'

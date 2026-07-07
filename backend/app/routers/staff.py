@@ -191,3 +191,62 @@ async def export_commissions_csv(
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=commissions.csv"},
     )
+
+
+# ---------- Commission Payouts (actually paid, vs. earned) ----------
+
+class PayoutCreate(BaseModel):
+    staff_id: uuid.UUID
+    amount: float
+    period_label: str | None = None
+    paid_date: date
+    payment_mode: str | None = None
+    notes: str | None = None
+
+
+@router.post("/commission-payouts")
+async def record_payout(
+    payload: PayoutCreate,
+    db: AsyncSession = Depends(get_db),
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    user: User = Depends(require_roles(UserRole.ORG_ADMIN, UserRole.ACCOUNTANT)),
+):
+    from app.models.commission_payout import CommissionPayout
+
+    payout = CommissionPayout(
+        tenant_id=tenant_id,
+        recorded_by_id=user.id,
+        **payload.model_dump(),
+    )
+    db.add(payout)
+    await db.commit()
+    await db.refresh(payout)
+    return {"id": str(payout.id), "status": "recorded"}
+
+
+@router.get("/{staff_id}/payouts")
+async def list_payouts(
+    staff_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    _user: User = Depends(require_roles(UserRole.ORG_ADMIN, UserRole.ACCOUNTANT)),
+):
+    from app.models.commission_payout import CommissionPayout
+
+    result = await db.execute(
+        select(CommissionPayout)
+        .where(CommissionPayout.staff_id == staff_id, CommissionPayout.tenant_id == tenant_id)
+        .order_by(CommissionPayout.paid_date.desc())
+    )
+    payouts = result.scalars().all()
+    total_paid = sum(p.amount for p in payouts)
+    return {
+        "total_paid": total_paid,
+        "payouts": [
+            {
+                "id": str(p.id), "amount": p.amount, "period_label": p.period_label,
+                "paid_date": p.paid_date, "payment_mode": p.payment_mode, "notes": p.notes,
+            }
+            for p in payouts
+        ],
+    }

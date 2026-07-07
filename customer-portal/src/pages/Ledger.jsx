@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import api from '../api/client'
+import { useCustomerAuth } from '../context/CustomerAuthContext'
+import { formatMoney } from '../utils/currency'
 import { useToast } from '../context/ToastContext'
 import { errorMessage } from '../utils/errors'
 
@@ -24,6 +26,8 @@ function loadRazorpayScript() {
 
 export default function Ledger() {
   const { bookingId } = useParams()
+  const { customer } = useCustomerAuth()
+  const currency = customer?.tenant_currency || 'INR'
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -93,9 +97,12 @@ export default function Ledger() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto bg-parchment min-h-[calc(100vh-64px)]">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <Link to="/" className="text-sm text-brand-600 hover:underline">← Back to my plots</Link>
-        <Link to={`/receipt/${bookingId}`} className="text-sm text-brand-600 hover:underline">View printable receipt →</Link>
+        <div className="flex gap-4">
+          <Link to={`/agreement/${bookingId}`} className="text-sm text-brand-600 hover:underline">Booking agreement →</Link>
+          <Link to={`/receipt/${bookingId}`} className="text-sm text-brand-600 hover:underline">Printable receipt →</Link>
+        </div>
       </div>
       <p className="font-mono text-xs uppercase tracking-widest text-brand-600 mt-3 mb-1">Booking Detail</p>
       <h1 className="font-display text-2xl font-semibold text-ink mb-4">EMI Schedule & Payments</h1>
@@ -103,11 +110,11 @@ export default function Ledger() {
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="doc-card p-4">
           <p className="text-xs font-mono uppercase tracking-widest text-ink/50">Total Scheduled</p>
-          <p className="text-lg font-mono font-medium text-ink mt-1">₹{totalDue.toLocaleString('en-IN')}</p>
+          <p className="text-lg font-mono font-medium text-ink mt-1">{formatMoney(totalDue, currency)}</p>
         </div>
         <div className="doc-card p-4">
           <p className="text-xs font-mono uppercase tracking-widest text-ink/50">Total Paid</p>
-          <p className="text-lg font-mono font-medium text-brand-600 mt-1">₹{totalPaid.toLocaleString('en-IN')}</p>
+          <p className="text-lg font-mono font-medium text-brand-600 mt-1">{formatMoney(totalPaid, currency)}</p>
         </div>
       </div>
 
@@ -128,7 +135,7 @@ export default function Ledger() {
               <tr key={i.number} className="border-t border-ink/10">
                 <td className="px-5 py-2">{i.number}</td>
                 <td className="px-5 py-2">{i.due_date}</td>
-                <td className="px-5 py-2">₹{i.amount_due.toLocaleString('en-IN')}</td>
+                <td className="px-5 py-2">{formatMoney(i.amount_due, currency)}</td>
                 <td className="px-5 py-2">
                   <span className={`record-tag ${INSTALLMENT_COLORS[i.status] || ''}`}>
                     {i.status}
@@ -168,7 +175,7 @@ export default function Ledger() {
             {data.payments.map((p, idx) => (
               <tr key={idx} className="border-t border-ink/10">
                 <td className="px-5 py-2 text-xs">{p.receipt_number}</td>
-                <td className="px-5 py-2">₹{p.amount.toLocaleString('en-IN')}</td>
+                <td className="px-5 py-2">{formatMoney(p.amount, currency)}</td>
                 <td className="px-5 py-2 text-ink/60">{p.mode}</td>
               </tr>
             ))}

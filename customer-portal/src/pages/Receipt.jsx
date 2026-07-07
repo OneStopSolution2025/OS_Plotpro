@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import api from '../api/client'
+import { formatMoney } from '../utils/currency'
 
 /**
  * Printable receipt — deliberately plain, high-contrast, print-optimized
@@ -64,7 +65,7 @@ export default function Receipt() {
               <tr key={i} className="border-b border-ink/10">
                 <td className="py-2">{p.receipt_number}</td>
                 <td className="py-2 text-ink/60">{p.mode}</td>
-                <td className="py-2 text-right">₹{p.amount.toLocaleString('en-IN')}</td>
+                <td className="py-2 text-right">{formatMoney(p.amount, customer?.tenant_currency)}</td>
               </tr>
             ))}
           </tbody>
@@ -74,7 +75,7 @@ export default function Receipt() {
           <div className="w-56">
             <div className="flex justify-between text-sm font-mono py-1">
               <span className="text-ink/60">Total Paid</span>
-              <span className="font-medium">₹{totalPaid.toLocaleString('en-IN')}</span>
+              <span className="font-medium">{formatMoney(totalPaid, customer?.tenant_currency)}</span>
             </div>
           </div>
         </div>

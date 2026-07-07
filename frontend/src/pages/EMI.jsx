@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 import api from '../api/client'
+import { formatMoney } from '../utils/currency'
+import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 
 export default function EMI() {
+  const { user } = useAuth()
+  const currency = user?.tenant_currency || 'INR'
+  const { showToast } = useToast()
   const [bookings, setBookings] = useState([])
   const [selected, setSelected] = useState('')
   const [schedule, setSchedule] = useState([])
@@ -30,6 +36,7 @@ export default function EMI() {
       first_due_date: genForm.first_due_date,
       frequency_days: parseInt(genForm.frequency_days),
     })
+    showToast('EMI schedule generated')
     loadDetails(selected)
   }
 
@@ -42,6 +49,7 @@ export default function EMI() {
       payment_mode: payForm.payment_mode,
     })
     setPayForm({ installment_id: '', amount: '', payment_mode: 'cash' })
+    showToast('Payment recorded')
     loadDetails(selected)
   }
 
@@ -54,7 +62,7 @@ export default function EMI() {
         className="border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4">
         <option value="">Select a booking</option>
         {bookings.filter(b => b.status !== 'cancelled').map((b) => (
-          <option key={b.id} value={b.id}>{b.id.slice(0, 8)} — ₹{b.total_price.toLocaleString('en-IN')}</option>
+          <option key={b.id} value={b.id}>{b.id.slice(0, 8)} — {formatMoney(b.total_price, currency)}</option>
         ))}
       </select>
 
@@ -96,7 +104,7 @@ export default function EMI() {
                       <tr key={s.id} className="border-t border-gray-100">
                         <td className="px-4 py-2">{s.installment_number}</td>
                         <td className="px-4 py-2">{s.due_date}</td>
-                        <td className="px-4 py-2">₹{s.amount_due.toLocaleString('en-IN')}</td>
+                        <td className="px-4 py-2">{formatMoney(s.amount_due, currency)}</td>
                         <td className="px-4 py-2">
                           <span className={`record-tag ${
                             s.status === 'paid' ? 'text-brand-600' :
@@ -134,9 +142,9 @@ export default function EMI() {
             <h2 className="font-display font-semibold text-ink mb-3">Ledger snapshot</h2>
             {ledger && (
               <div className="space-y-2 text-sm font-mono">
-                <div className="flex justify-between"><span className="text-ink/50 font-sans">Total scheduled</span><span>₹{ledger.total_scheduled.toLocaleString('en-IN')}</span></div>
-                <div className="flex justify-between"><span className="text-ink/50 font-sans">Total paid</span><span className="text-brand-600">₹{ledger.total_paid.toLocaleString('en-IN')}</span></div>
-                <div className="flex justify-between font-medium border-t border-ink/10 pt-2"><span className="font-sans">Balance</span><span>₹{ledger.balance.toLocaleString('en-IN')}</span></div>
+                <div className="flex justify-between"><span className="text-ink/50 font-sans">Total scheduled</span><span>{formatMoney(ledger.total_scheduled, currency)}</span></div>
+                <div className="flex justify-between"><span className="text-ink/50 font-sans">Total paid</span><span className="text-brand-600">{formatMoney(ledger.total_paid, currency)}</span></div>
+                <div className="flex justify-between font-medium border-t border-ink/10 pt-2"><span className="font-sans">Balance</span><span>{formatMoney(ledger.balance, currency)}</span></div>
                 <div className="flex justify-between"><span className="text-ink/50 font-sans">Overdue installments</span><span className="text-rust-500">{ledger.overdue_installments}</span></div>
               </div>
             )}

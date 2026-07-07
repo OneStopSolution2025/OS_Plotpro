@@ -7,6 +7,7 @@ from app.core.database import get_db
 from app.core.security import verify_password, hash_password, create_access_token
 from app.core.deps import get_current_user, require_roles
 from app.models.user import User, UserRole
+from app.models.tenant import Tenant
 from app.schemas.auth import Token, UserOut, UserCreate
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -27,8 +28,12 @@ async def login(form: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = 
 
 
 @router.get("/me", response_model=UserOut)
-async def me(user: User = Depends(get_current_user)):
-    return user
+async def me(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    tenant_result = await db.execute(select(Tenant).where(Tenant.id == user.tenant_id))
+    tenant = tenant_result.scalar_one_or_none()
+    out = UserOut.model_validate(user)
+    out.tenant_currency = tenant.currency if tenant else "INR"
+    return out
 
 
 @router.post("/staff", response_model=UserOut, status_code=status.HTTP_201_CREATED)

@@ -53,6 +53,14 @@ class Plot(UUIDPKMixin, TenantScopedMixin, TimestampMixin, Base):
 
     status: Mapped[PlotStatus] = mapped_column(Enum(PlotStatus), default=PlotStatus.AVAILABLE)
 
+    # Descriptive details — surfaced to staff during booking and to
+    # customers in their portal, so a plot isn't just a number and a price.
+    image_url: Mapped[str] = mapped_column(String(500), nullable=True)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    amenities: Mapped[str] = mapped_column(Text, nullable=True)  # comma-separated, e.g. "Park facing, Underground drainage"
+    patta_number: Mapped[str] = mapped_column(String(100), nullable=True)
+    google_maps_link: Mapped[str] = mapped_column(String(500), nullable=True)
+
     # Coordinates for the clickable layout map overlay (percentage-based x/y
     # on top of layout_image_url, so it works regardless of image resolution)
     map_x_percent: Mapped[float] = mapped_column(Float, nullable=True)

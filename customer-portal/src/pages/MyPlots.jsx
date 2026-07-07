@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { MapPin, ArrowRight } from 'lucide-react'
 import api from '../api/client'
+import { useCustomerAuth } from '../context/CustomerAuthContext'
+import { formatMoney } from '../utils/currency'
 
 const STATUS_LABELS = {
   token_paid: { label: 'Token Paid', color: 'text-brass-600' },
@@ -12,6 +15,8 @@ const STATUS_LABELS = {
 export default function MyPlots() {
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
+  const { customer } = useCustomerAuth()
+  const currency = customer?.tenant_currency || 'INR'
 
   useEffect(() => {
     api.get('/customer-auth/my-bookings')
@@ -38,20 +43,30 @@ export default function MyPlots() {
               <Link
                 key={b.id}
                 to={`/ledger/${b.id}`}
-                className="block doc-card p-5 hover:border-brand-500 transition"
+                className="flex gap-4 doc-card p-4 hover:border-brand-500 transition group"
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-ink/40 font-mono">Booking #{b.id.slice(0, 8)}</p>
-                    <p className="text-lg font-mono font-medium text-ink mt-1">
-                      ₹{b.total_price.toLocaleString('en-IN')}
-                    </p>
+                {b.image_url ? (
+                  <img src={b.image_url} alt={b.plot_number} className="w-24 h-24 object-cover flex-shrink-0 border border-ink/10" />
+                ) : (
+                  <div className="w-24 h-24 bg-ink/5 flex items-center justify-center flex-shrink-0 border border-ink/10">
+                    <MapPin size={24} className="text-ink/20" />
                   </div>
-                  <span className={`record-tag ${status.color}`}>
-                    {status.label}
-                  </span>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-ink/40 font-mono">Plot {b.plot_number} · {b.project_name}</p>
+                      <p className="text-lg font-mono font-medium text-ink mt-1">
+                        {formatMoney(b.total_price, currency)}
+                      </p>
+                      {b.extent_sqft && <p className="text-xs text-ink/50 mt-0.5">{b.extent_sqft} sqft</p>}
+                    </div>
+                    <span className={`record-tag ${status.color}`}>{status.label}</span>
+                  </div>
+                  <p className="text-sm text-brand-600 mt-3 flex items-center gap-1 group-hover:gap-2 transition-all">
+                    View EMI schedule & payment history <ArrowRight size={13} />
+                  </p>
                 </div>
-                <p className="text-sm text-brand-600 mt-3">View EMI schedule & payment history →</p>
               </Link>
             )
           })}

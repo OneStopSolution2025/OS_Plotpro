@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import { useToast } from '../context/ToastContext'
 import { errorMessage } from '../utils/errors'
@@ -45,12 +46,74 @@ function NewEnquiryForm({ onCreated }) {
   )
 }
 
+function ConvertModal({ enquiry, onClose, onConverted }) {
+  const [plots, setPlots] = useState([])
+  const [plotId, setPlotId] = useState('')
+  const [tokenAdvance, setTokenAdvance] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const { showToast } = useToast()
+
+  useEffect(() => {
+    api.get('/plots', { params: { status_filter: 'available' } }).then((res) => setPlots(res.data))
+  }, [])
+
+  const submit = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      const res = await api.post(`/enquiries/${enquiry.id}/convert-to-booking`, {
+        plot_id: plotId,
+        token_advance: parseFloat(tokenAdvance || 0),
+      })
+      showToast(`Converted — booking created for ${enquiry.customer_name}`, 'success')
+      onConverted()
+      onClose()
+    } catch (err) {
+      showToast(errorMessage(err, 'Could not convert this enquiry'), 'error')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-ink/40 flex items-center justify-center z-50 p-4">
+      <div className="doc-card p-6 w-full max-w-md">
+        <h2 className="font-display font-semibold text-ink mb-1">Convert to Booking</h2>
+        <p className="text-sm text-ink/60 mb-4">{enquiry.customer_name} · {enquiry.customer_phone}</p>
+        <form onSubmit={submit} className="space-y-3">
+          <div>
+            <label className="text-xs font-medium text-ink/70 uppercase tracking-wide">Plot</label>
+            <select required value={plotId} onChange={(e) => setPlotId(e.target.value)}
+              className="w-full border border-ink/15 px-3 py-2 text-sm mt-1">
+              <option value="">Select available plot</option>
+              {plots.map((p) => <option key={p.id} value={p.id}>{p.plot_number} — ₹{p.total_price.toLocaleString('en-IN')}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-ink/70 uppercase tracking-wide">Token advance</label>
+            <input type="number" value={tokenAdvance} onChange={(e) => setTokenAdvance(e.target.value)}
+              className="w-full border border-ink/15 px-3 py-2 text-sm mt-1 font-mono" />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button type="submit" disabled={submitting} className="bg-brand-600 text-white px-4 py-2 text-sm disabled:opacity-60">
+              {submitting ? 'Converting...' : 'Confirm & create booking'}
+            </button>
+            <button type="button" onClick={onClose} className="text-sm text-ink/50 px-2">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function Enquiries() {
   const [enquiries, setEnquiries] = useState([])
   const [search, setSearch] = useState('')
   const [stageFilter, setStageFilter] = useState('')
   const [selected, setSelected] = useState([])
+  const [converting, setConverting] = useState(null)
   const { showToast } = useToast()
+  const navigate = useNavigate()
 
   const load = () => {
     const params = {}
@@ -130,6 +193,7 @@ export default function Enquiries() {
               <th className="px-4 py-2">Phone</th>
               <th className="px-4 py-2">Source</th>
               <th className="px-4 py-2">Stage</th>
+              <th className="px-4 py-2"></th>
             </tr>
           </thead>
           <tbody>
@@ -150,14 +214,29 @@ export default function Enquiries() {
                     {STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </td>
+                <td className="px-4 py-2">
+                  {e.stage !== 'converted' && (
+                    <button onClick={() => setConverting(e)} className="text-xs text-brand-700 font-medium hover:underline">
+                      Convert to Booking →
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
             {enquiries.length === 0 && (
-              <tr><td colSpan="5" className="px-4 py-6 text-center text-ink/40">No enquiries match your filters</td></tr>
+              <tr><td colSpan="6" className="px-4 py-6 text-center text-ink/40">No enquiries match your filters</td></tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {converting && (
+        <ConvertModal
+          enquiry={converting}
+          onClose={() => setConverting(null)}
+          onConverted={load}
+        />
+      )}
     </div>
   )
 }

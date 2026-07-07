@@ -14,6 +14,7 @@ class UserOut(BaseModel):
     email: str
     role: UserRole
     tenant_id: uuid.UUID
+    tenant_currency: str = "INR"
 
     class Config:
         from_attributes = True

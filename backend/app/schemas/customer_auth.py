@@ -24,6 +24,7 @@ class CustomerMeOut(BaseModel):
     full_name: str
     phone: str
     email: str | None
+    tenant_currency: str = "INR"
 
     class Config:
         from_attributes = True
