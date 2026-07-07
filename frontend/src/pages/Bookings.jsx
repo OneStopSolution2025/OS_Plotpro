@@ -1,38 +1,57 @@
 import { useEffect, useState } from 'react'
 import api from '../api/client'
+import { useToast } from '../context/ToastContext'
+import { errorMessage } from '../utils/errors'
 
 export default function Bookings() {
   const [bookings, setBookings] = useState([])
   const [plots, setPlots] = useState([])
+  const [search, setSearch] = useState('')
   const [form, setForm] = useState({
     plot_id: '', customer_name: '', customer_phone: '', token_advance: '',
   })
   const [open, setOpen] = useState(false)
+  const { showToast } = useToast()
 
-  const loadBookings = () => api.get('/bookings').then((res) => setBookings(res.data))
+  const loadBookings = () => {
+    const params = search ? { search } : {}
+    api.get('/bookings', { params }).then((res) => setBookings(res.data))
+      .catch((err) => showToast(errorMessage(err, 'Could not load bookings'), 'error'))
+  }
   const loadPlots = () => api.get('/plots', { params: { status_filter: 'available' } }).then((res) => setPlots(res.data))
 
-  useEffect(() => { loadBookings(); loadPlots() }, [])
+  useEffect(() => { loadBookings() }, [search])
+  useEffect(() => { loadPlots() }, [])
 
   const submit = async (e) => {
     e.preventDefault()
-    await api.post('/bookings', {
-      plot_id: form.plot_id,
-      customer: { full_name: form.customer_name, phone: form.customer_phone },
-      token_advance: parseFloat(form.token_advance || 0),
-    })
-    setForm({ plot_id: '', customer_name: '', customer_phone: '', token_advance: '' })
-    setOpen(false)
-    loadBookings()
-    loadPlots()
+    try {
+      await api.post('/bookings', {
+        plot_id: form.plot_id,
+        customer: { full_name: form.customer_name, phone: form.customer_phone },
+        token_advance: parseFloat(form.token_advance || 0),
+      })
+      setForm({ plot_id: '', customer_name: '', customer_phone: '', token_advance: '' })
+      setOpen(false)
+      showToast('Booking created', 'success')
+      loadBookings()
+      loadPlots()
+    } catch (err) {
+      showToast(errorMessage(err, 'Could not create booking'), 'error')
+    }
   }
 
   const cancelBooking = async (id) => {
     const reason = window.prompt('Cancellation reason?')
     if (!reason) return
-    await api.post(`/bookings/${id}/cancel`, { reason })
-    loadBookings()
-    loadPlots()
+    try {
+      await api.post(`/bookings/${id}/cancel`, { reason })
+      showToast('Booking cancelled', 'success')
+      loadBookings()
+      loadPlots()
+    } catch (err) {
+      showToast(errorMessage(err), 'error')
+    }
   }
 
   return (
@@ -40,12 +59,22 @@ export default function Bookings() {
       <p className="font-mono text-xs uppercase tracking-widest text-brand-600 mb-1">Sales</p>
       <h1 className="font-display text-3xl font-semibold text-ink mb-4">Bookings</h1>
 
-      {!open ? (
-        <button onClick={() => setOpen(true)} className="text-sm text-brand-700 font-medium hover:underline mb-4">
-          + New booking
-        </button>
-      ) : (
-        <form onSubmit={submit} className="bg-white border doc-card p-4 flex flex-wrap gap-2 mb-4 items-end">
+      <div className="flex items-center gap-2 mb-4">
+        <input
+          placeholder="Search by booking ID..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border border-ink/15 px-3 py-2 text-sm w-64 font-mono"
+        />
+        {!open && (
+          <button onClick={() => setOpen(true)} className="text-sm text-brand-700 font-medium hover:underline ml-auto">
+            + New booking
+          </button>
+        )}
+      </div>
+
+      {open && (
+        <form onSubmit={submit} className="doc-card p-4 flex flex-wrap gap-2 mb-4 items-end">
           <select required value={form.plot_id} onChange={(e) => setForm({ ...form, plot_id: e.target.value })}
             className="border border-ink/15 px-3 py-2 text-sm">
             <option value="">Select available plot</option>
@@ -56,12 +85,12 @@ export default function Bookings() {
             className="border border-ink/15 px-3 py-2 text-sm" />
           <input placeholder="Phone" required value={form.customer_phone}
             onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}
-            className="border border-ink/15 px-3 py-2 text-sm" />
+            className="border border-ink/15 px-3 py-2 text-sm font-mono" />
           <input placeholder="Token advance" type="number" value={form.token_advance}
             onChange={(e) => setForm({ ...form, token_advance: e.target.value })}
-            className="border border-ink/15 px-3 py-2 text-sm w-32" />
+            className="border border-ink/15 px-3 py-2 text-sm w-32 font-mono" />
           <button type="submit" className="bg-brand-600 text-white px-4 py-2 text-sm">Book</button>
-          <button type="button" onClick={() => setOpen(false)} className="text-sm text-gray-500 px-2">Cancel</button>
+          <button type="button" onClick={() => setOpen(false)} className="text-sm text-ink/50 px-2">Cancel</button>
         </form>
       )}
 
@@ -95,7 +124,7 @@ export default function Bookings() {
               </tr>
             ))}
             {bookings.length === 0 && (
-              <tr><td colSpan="5" className="px-4 py-6 text-center text-ink/40">No bookings yet</td></tr>
+              <tr><td colSpan="5" className="px-4 py-6 text-center text-ink/40">No bookings found</td></tr>
             )}
           </tbody>
         </table>

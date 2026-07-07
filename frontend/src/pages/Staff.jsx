@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import api from '../api/client'
+import { useToast } from '../context/ToastContext'
 
 export default function Staff() {
+  const { showToast } = useToast()
   const [staff, setStaff] = useState([])
   const [performance, setPerformance] = useState({})
 
@@ -21,13 +23,34 @@ export default function Staff() {
       monthly_target: target ? parseInt(target) : undefined,
       commission_percent: commission ? parseFloat(commission) : undefined,
     })
+    showToast('Target updated')
     load()
+  }
+
+  const exportCsv = async () => {
+    try {
+      const res = await api.get('/staff/export/commissions.csv', { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'commissions.csv')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    } catch {
+      showToast('Could not export commissions', 'error')
+    }
   }
 
   return (
     <div>
       <p className="font-mono text-xs uppercase tracking-widest text-brand-600 mb-1">Team</p>
-      <h1 className="font-display text-3xl font-semibold text-ink mb-4">Staff</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="font-display text-3xl font-semibold text-ink">Staff</h1>
+        <button onClick={exportCsv} className="text-sm text-brand-700 font-medium hover:underline">
+          ⬇ Export commissions (CSV)
+        </button>
+      </div>
 
       <div className="doc-card overflow-hidden">
         <table className="w-full text-sm">

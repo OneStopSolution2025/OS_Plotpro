@@ -2,6 +2,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.core.deps import get_current_user, get_tenant_id
@@ -28,12 +29,44 @@ async def create_enquiry(
 
 @router.get("", response_model=list[EnquiryOut])
 async def list_enquiries(
+    search: str | None = None,
+    stage: str | None = None,
     db: AsyncSession = Depends(get_db),
     tenant_id: uuid.UUID = Depends(get_tenant_id),
     _user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Enquiry).where(Enquiry.tenant_id == tenant_id))
+    query = select(Enquiry).where(Enquiry.tenant_id == tenant_id)
+    if search:
+        like = f"%{search}%"
+        query = query.where(
+            (Enquiry.customer_name.ilike(like)) | (Enquiry.customer_phone.ilike(like))
+        )
+    if stage:
+        query = query.where(Enquiry.stage == stage)
+    result = await db.execute(query.order_by(Enquiry.created_at.desc()))
     return result.scalars().all()
+
+
+class BulkStageUpdate(BaseModel):
+    enquiry_ids: list[uuid.UUID]
+    stage: str
+
+
+@router.post("/bulk-update-stage")
+async def bulk_update_stage(
+    payload: BulkStageUpdate,
+    db: AsyncSession = Depends(get_db),
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    _user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Enquiry).where(Enquiry.id.in_(payload.enquiry_ids), Enquiry.tenant_id == tenant_id)
+    )
+    enquiries = result.scalars().all()
+    for e in enquiries:
+        e.stage = payload.stage
+    await db.commit()
+    return {"updated": len(enquiries)}
 
 
 @router.patch("/{enquiry_id}", response_model=EnquiryOut)

@@ -1,6 +1,9 @@
 import uuid
+import csv
+import io
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from pydantic import BaseModel
@@ -149,3 +152,42 @@ async def staff_performance(
         "commission_percent": staff.commission_percent,
         "commission_earned": commission_earned,
     }
+
+
+@router.get("/export/commissions.csv")
+async def export_commissions_csv(
+    db: AsyncSession = Depends(get_db),
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    _user: User = Depends(require_roles(UserRole.ORG_ADMIN, UserRole.ACCOUNTANT)),
+):
+    """Downloadable CSV of every staff member's sales and commission —
+    opens directly in Excel for payroll/payout processing."""
+    staff_result = await db.execute(select(User).where(User.tenant_id == tenant_id))
+    all_staff = staff_result.scalars().all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Name", "Role", "Monthly Target", "Bookings", "Sales Value", "Commission %", "Commission Earned"])
+
+    for staff in all_staff:
+        bookings_result = await db.execute(
+            select(Booking).where(
+                Booking.sold_by_id == staff.id,
+                Booking.tenant_id == tenant_id,
+                Booking.status != BookingStatus.CANCELLED,
+            )
+        )
+        bookings = bookings_result.scalars().all()
+        total_sales_value = sum(b.total_price for b in bookings)
+        commission_earned = round(total_sales_value * (staff.commission_percent / 100), 2)
+        writer.writerow([
+            staff.full_name, staff.role.value, staff.monthly_target,
+            len(bookings), total_sales_value, staff.commission_percent, commission_earned,
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=commissions.csv"},
+    )

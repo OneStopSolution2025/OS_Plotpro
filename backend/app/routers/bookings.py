@@ -1,7 +1,7 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func, String
 
 from app.core.database import get_db
 from app.core.deps import get_current_user, get_tenant_id
@@ -66,11 +66,16 @@ async def create_booking(
 
 @router.get("", response_model=list[BookingOut])
 async def list_bookings(
+    search: str | None = None,
     db: AsyncSession = Depends(get_db),
     tenant_id: uuid.UUID = Depends(get_tenant_id),
     _user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Booking).where(Booking.tenant_id == tenant_id))
+    query = select(Booking).where(Booking.tenant_id == tenant_id)
+    if search:
+        # Booking ID is a UUID; allow searching by its string prefix
+        query = query.where(func.cast(Booking.id, String).ilike(f"{search}%"))
+    result = await db.execute(query.order_by(Booking.created_at.desc()))
     return result.scalars().all()
 
 

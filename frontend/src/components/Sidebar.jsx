@@ -9,10 +9,16 @@ const links = [
   { to: '/emi', label: 'EMI & Payments', icon: '💳' },
   { to: '/staff', label: 'Staff', icon: '👥' },
   { to: '/documents', label: 'Legal Documents', icon: '📄' },
+  { to: '/support', label: 'Support Tickets', icon: '💬' },
+]
+
+const platformAdminLinks = [
+  { to: '/tenants', label: 'All Promoters', icon: '🏢' },
 ]
 
 export default function Sidebar() {
   const { user, logout } = useAuth()
+  const isPlatformAdmin = user?.role === 'platform_admin'
 
   return (
     <div className="w-64 bg-ink h-screen flex flex-col border-r border-black/20">
@@ -22,7 +28,28 @@ export default function Sidebar() {
           {user?.role?.replace('_', ' ')}
         </p>
       </div>
-      <nav className="flex-1 p-3 space-y-1">
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        {isPlatformAdmin && (
+          <>
+            {platformAdminLinks.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2 text-sm font-medium transition border-l-2 ${
+                    isActive
+                      ? 'bg-white/10 text-brass-400 border-brass-400'
+                      : 'text-white/60 hover:text-white hover:bg-white/5 border-transparent'
+                  }`
+                }
+              >
+                <span className="opacity-80">{link.icon}</span>
+                {link.label}
+              </NavLink>
+            ))}
+            <div className="border-t border-white/10 my-2" />
+          </>
+        )}
         {links.map((link) => (
           <NavLink
             key={link.to}

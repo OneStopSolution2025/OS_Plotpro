@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import api from '../api/client'
+import { useToast } from '../context/ToastContext'
+import { errorMessage } from '../utils/errors'
 
 const INSTALLMENT_COLORS = {
   paid: 'text-brand-600',
@@ -9,18 +11,79 @@ const INSTALLMENT_COLORS = {
   waived: 'text-brass-600',
 }
 
+function loadRazorpayScript() {
+  return new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true)
+    const script = document.createElement('script')
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    script.onload = () => resolve(true)
+    script.onerror = () => resolve(false)
+    document.body.appendChild(script)
+  })
+}
+
 export default function Ledger() {
   const { bookingId } = useParams()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [payingId, setPayingId] = useState(null)
+  const { showToast } = useToast()
 
-  useEffect(() => {
+  const load = () => {
     api.get(`/customer-auth/my-ledger/${bookingId}`)
       .then((res) => setData(res.data))
       .catch(() => setError('Could not load this booking.'))
       .finally(() => setLoading(false))
-  }, [bookingId])
+  }
+
+  useEffect(() => { load() }, [bookingId])
+
+  const payInstallment = async (installment) => {
+    setPayingId(installment.id || installment.number)
+    try {
+      const orderRes = await api.post('/payment-gateway/create-order', {
+        booking_id: bookingId,
+        installment_id: installment.id,
+        amount: installment.amount_due,
+      })
+
+      const scriptLoaded = await loadRazorpayScript()
+      if (!scriptLoaded) {
+        showToast('Could not load payment gateway. Check your connection.', 'error')
+        setPayingId(null)
+        return
+      }
+
+      const rzp = new window.Razorpay({
+        key: orderRes.data.razorpay_key_id,
+        amount: orderRes.data.amount,
+        currency: orderRes.data.currency,
+        order_id: orderRes.data.razorpay_order_id,
+        name: 'OS2 PlotPro',
+        description: `Installment #${installment.installment_number}`,
+        handler: async (response) => {
+          try {
+            await api.post('/payment-gateway/verify-payment', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            })
+            showToast('Payment successful!', 'success')
+            load()
+          } catch (err) {
+            showToast(errorMessage(err, 'Payment verification failed — contact support if amount was deducted'), 'error')
+          }
+        },
+        modal: { ondismiss: () => setPayingId(null) },
+        theme: { color: '#2F6B4F' },
+      })
+      rzp.open()
+    } catch (err) {
+      showToast(errorMessage(err, 'Online payment is not available yet — please pay your promoter directly'), 'error')
+      setPayingId(null)
+    }
+  }
 
   if (loading) return <div className="p-6 text-ink/50 text-sm">Loading...</div>
   if (error) return <div className="p-6 text-rust-500 text-sm">{error}</div>
@@ -30,7 +93,10 @@ export default function Ledger() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto bg-parchment min-h-[calc(100vh-64px)]">
-      <Link to="/" className="text-sm text-brand-600 hover:underline">← Back to my plots</Link>
+      <div className="flex items-center justify-between">
+        <Link to="/" className="text-sm text-brand-600 hover:underline">← Back to my plots</Link>
+        <Link to={`/receipt/${bookingId}`} className="text-sm text-brand-600 hover:underline">View printable receipt →</Link>
+      </div>
       <p className="font-mono text-xs uppercase tracking-widest text-brand-600 mt-3 mb-1">Booking Detail</p>
       <h1 className="font-display text-2xl font-semibold text-ink mb-4">EMI Schedule & Payments</h1>
 
@@ -54,6 +120,7 @@ export default function Ledger() {
               <th className="px-5 py-2">Due date</th>
               <th className="px-5 py-2">Amount</th>
               <th className="px-5 py-2">Status</th>
+              <th className="px-5 py-2"></th>
             </tr>
           </thead>
           <tbody className="font-mono">
@@ -67,10 +134,21 @@ export default function Ledger() {
                     {i.status}
                   </span>
                 </td>
+                <td className="px-5 py-2">
+                  {(i.status === 'pending' || i.status === 'overdue') && (
+                    <button
+                      onClick={() => payInstallment(i)}
+                      disabled={payingId === (i.id || i.number)}
+                      className="bg-brand-600 text-white px-3 py-1 text-xs disabled:opacity-60"
+                    >
+                      {payingId === (i.id || i.number) ? 'Processing...' : 'Pay Now'}
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
             {data.installments.length === 0 && (
-              <tr><td colSpan="4" className="px-5 py-6 text-center text-ink/40 font-sans">No schedule generated yet</td></tr>
+              <tr><td colSpan="5" className="px-5 py-6 text-center text-ink/40 font-sans">No schedule generated yet</td></tr>
             )}
           </tbody>
         </table>

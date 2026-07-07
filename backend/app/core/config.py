@@ -16,6 +16,18 @@ class Settings(BaseSettings):
     # Super admin (platform owner - OS2, not a tenant)
     PLATFORM_ADMIN_EMAIL: str = "admin@os2studio.com"
 
+    # Razorpay (online EMI payments from the customer portal).
+    # Get these from https://dashboard.razorpay.com/app/keys — leave blank
+    # to keep online payment disabled (staff can still record cash/UPI manually).
+    RAZORPAY_KEY_ID: str = ""
+    RAZORPAY_KEY_SECRET: str = ""
+
+    # Twilio (real SMS/WhatsApp for OTP + reminders). Leave blank to keep
+    # notifications logging to console only — see services/notifications.py.
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_FROM_NUMBER: str = ""
+
     class Config:
         env_file = ".env"
 

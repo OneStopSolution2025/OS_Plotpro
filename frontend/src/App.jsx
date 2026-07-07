@@ -7,6 +7,8 @@ import Bookings from './pages/Bookings'
 import EMI from './pages/EMI'
 import Staff from './pages/Staff'
 import Documents from './pages/Documents'
+import SupportTickets from './pages/SupportTickets'
+import Tenants from './pages/Tenants'
 import Sidebar from './components/Sidebar'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -43,6 +45,12 @@ export default function App() {
       } />
       <Route path="/documents" element={
         <ProtectedRoute><AdminLayout><Documents /></AdminLayout></ProtectedRoute>
+      } />
+      <Route path="/support" element={
+        <ProtectedRoute><AdminLayout><SupportTickets /></AdminLayout></ProtectedRoute>
+      } />
+      <Route path="/tenants" element={
+        <ProtectedRoute><AdminLayout><Tenants /></AdminLayout></ProtectedRoute>
       } />
     </Routes>
   )

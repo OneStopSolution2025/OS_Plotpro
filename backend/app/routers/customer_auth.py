@@ -126,7 +126,7 @@ async def my_ledger(
 
     return {
         "installments": [
-            {"number": i.installment_number, "due_date": i.due_date, "amount_due": i.amount_due, "status": i.status}
+            {"id": str(i.id), "number": i.installment_number, "due_date": i.due_date, "amount_due": i.amount_due, "status": i.status}
             for i in installments
         ],
         "payments": [

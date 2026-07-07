@@ -8,3 +8,5 @@ from app.models.emi import EMIInstallment, Payment  # noqa
 from app.models.document import LegalDocument  # noqa
 from app.models.attendance import Attendance  # noqa
 from app.models.otp import CustomerOTP  # noqa
+from app.models.support_ticket import SupportTicket  # noqa
+from app.models.payment_order import PaymentOrder  # noqa

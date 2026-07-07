@@ -1,3 +1,4 @@
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -8,6 +9,8 @@ from app.core.security import hash_password
 from app.core.deps import require_roles
 from app.models.tenant import Tenant, SubscriptionPlan
 from app.models.user import User, UserRole
+from app.models.plot import Plot
+from app.models.booking import Booking
 
 router = APIRouter(prefix="/api/tenants", tags=["tenants (platform admin)"])
 
@@ -58,3 +61,47 @@ async def onboard_tenant(
     await db.commit()
 
     return {"tenant_id": str(tenant.id), "subdomain": tenant.subdomain, "admin_email": org_admin.email}
+
+
+@router.get("/overview")
+async def platform_overview(
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(require_roles(UserRole.PLATFORM_ADMIN)),
+):
+    """Cross-tenant snapshot for OS2's own team — usage per promoter,
+    at a glance, without needing to log into each tenant separately."""
+    tenants = (await db.execute(select(Tenant))).scalars().all()
+    overview = []
+    for t in tenants:
+        plot_count = len((await db.execute(select(Plot).where(Plot.tenant_id == t.id))).scalars().all())
+        booking_count = len((await db.execute(select(Booking).where(Booking.tenant_id == t.id))).scalars().all())
+        staff_count = len((await db.execute(select(User).where(User.tenant_id == t.id))).scalars().all())
+        overview.append({
+            "id": str(t.id),
+            "company_name": t.company_name,
+            "subdomain": t.subdomain,
+            "subscription_plan": t.subscription_plan,
+            "is_active": t.is_active,
+            "plot_count": plot_count,
+            "booking_count": booking_count,
+            "staff_count": staff_count,
+            "created_at": t.created_at,
+        })
+    return overview
+
+
+@router.patch("/{tenant_id}/status")
+async def set_tenant_status(
+    tenant_id: uuid.UUID,
+    is_active: bool,
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(require_roles(UserRole.PLATFORM_ADMIN)),
+):
+    """Suspend or reactivate a promoter's access — e.g. for non-payment."""
+    result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
+    tenant = result.scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    tenant.is_active = is_active
+    await db.commit()
+    return {"status": "updated", "is_active": tenant.is_active}
