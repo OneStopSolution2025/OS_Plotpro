@@ -5,10 +5,11 @@ from sqlalchemy import select
 from pydantic import BaseModel
 
 from app.core.database import get_db
-from app.core.deps import get_current_user, get_tenant_id
+from app.core.deps import get_current_user, get_tenant_id, require_roles
 from app.core.customer_deps import get_current_customer
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.customer import Customer
+from app.models.tenant import Tenant
 from app.models.support_ticket import SupportTicket, TicketStatus
 
 router = APIRouter(tags=["support tickets"])
@@ -69,20 +70,30 @@ async def my_tickets(
 @router.get("/api/support-tickets")
 async def list_tickets(
     db: AsyncSession = Depends(get_db),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(SupportTicket).where(SupportTicket.tenant_id == tenant_id).order_by(SupportTicket.created_at.desc())
-    )
+    """Org admins/staff see only their own tenant's tickets. Platform admin
+    (OS2 Studio) sees every promoter's tickets, since it's the one place
+    OS2 can offer support across all its customers."""
+    query = select(SupportTicket)
+    if user.role != UserRole.PLATFORM_ADMIN:
+        query = query.where(SupportTicket.tenant_id == user.tenant_id)
+    result = await db.execute(query.order_by(SupportTicket.created_at.desc()))
     tickets = result.scalars().all()
-    return [
-        {
+
+    out = []
+    for t in tickets:
+        tenant_name = None
+        if user.role == UserRole.PLATFORM_ADMIN:
+            tenant_result = await db.execute(select(Tenant).where(Tenant.id == t.tenant_id))
+            tenant = tenant_result.scalar_one_or_none()
+            tenant_name = tenant.company_name if tenant else None
+        out.append({
             "id": str(t.id), "subject": t.subject, "message": t.message,
             "status": t.status, "staff_reply": t.staff_reply, "created_at": t.created_at,
-        }
-        for t in tickets
-    ]
+            "promoter_name": tenant_name,
+        })
+    return out
 
 
 @router.patch("/api/support-tickets/{ticket_id}")
@@ -90,10 +101,12 @@ async def reply_ticket(
     ticket_id: uuid.UUID,
     payload: TicketReply,
     db: AsyncSession = Depends(get_db),
-    tenant_id: uuid.UUID = Depends(get_tenant_id),
     user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(SupportTicket).where(SupportTicket.id == ticket_id, SupportTicket.tenant_id == tenant_id))
+    query = select(SupportTicket).where(SupportTicket.id == ticket_id)
+    if user.role != UserRole.PLATFORM_ADMIN:
+        query = query.where(SupportTicket.tenant_id == user.tenant_id)
+    result = await db.execute(query)
     ticket = result.scalar_one_or_none()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")

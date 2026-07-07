@@ -43,7 +43,10 @@ export default function SupportTickets() {
           <div key={t.id} className="doc-card p-5">
             <div className="flex items-center justify-between mb-1">
               <p className="font-medium text-ink">{t.subject}</p>
-              <span className={`record-tag ${STATUS_COLORS[t.status] || ''}`}>{t.status}</span>
+              <div className="flex items-center gap-2">
+                {t.promoter_name && <span className="record-tag text-brand-600">{t.promoter_name}</span>}
+                <span className={`record-tag ${STATUS_COLORS[t.status] || ''}`}>{t.status}</span>
+              </div>
             </div>
             <p className="text-sm text-ink/70 mb-3">{t.message}</p>
 

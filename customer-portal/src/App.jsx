@@ -1,17 +1,25 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
-import Login from './pages/Login'
-import MyPlots from './pages/MyPlots'
-import Ledger from './pages/Ledger'
-import Receipt from './pages/Receipt'
-import Support from './pages/Support'
 import Header from './components/Header'
 import ProtectedRoute from './components/ProtectedRoute'
+
+const Login = lazy(() => import('./pages/Login'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const MyPlots = lazy(() => import('./pages/MyPlots'))
+const Ledger = lazy(() => import('./pages/Ledger'))
+const Receipt = lazy(() => import('./pages/Receipt'))
+const SaleAgreement = lazy(() => import('./pages/SaleAgreement'))
+const Support = lazy(() => import('./pages/Support'))
+
+function PageLoader() {
+  return <div className="p-8 text-ink/40 text-sm">Loading...</div>
+}
 
 function PortalLayout({ children }) {
   return (
     <div className="min-h-screen bg-parchment">
       <Header />
-      {children}
+      <Suspense fallback={<PageLoader />}>{children}</Suspense>
     </div>
   )
 }
@@ -19,15 +27,23 @@ function PortalLayout({ children }) {
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={
+        <Suspense fallback={<PageLoader />}><Login /></Suspense>
+      } />
       <Route path="/" element={
+        <ProtectedRoute><PortalLayout><Dashboard /></PortalLayout></ProtectedRoute>
+      } />
+      <Route path="/my-plots" element={
         <ProtectedRoute><PortalLayout><MyPlots /></PortalLayout></ProtectedRoute>
       } />
       <Route path="/ledger/:bookingId" element={
         <ProtectedRoute><PortalLayout><Ledger /></PortalLayout></ProtectedRoute>
       } />
       <Route path="/receipt/:bookingId" element={
-        <ProtectedRoute><Receipt /></ProtectedRoute>
+        <ProtectedRoute><Suspense fallback={<PageLoader />}><Receipt /></Suspense></ProtectedRoute>
+      } />
+      <Route path="/agreement/:bookingId" element={
+        <ProtectedRoute><Suspense fallback={<PageLoader />}><SaleAgreement /></Suspense></ProtectedRoute>
       } />
       <Route path="/support" element={
         <ProtectedRoute><PortalLayout><Support /></PortalLayout></ProtectedRoute>

@@ -4,48 +4,32 @@
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #F3EFE3;
-  color: #16231F;
+  background-color: #F7F7F5;
+  color: #0D0D0D;
 }
 
-/* Signature element: a "registry document" corner notch — evokes a
-   stamped land record / survey paper corner fold. Used on cards that
-   represent a record: stat cards, plot cells, the login panel. */
+/* Standard card — clean rounded corners + subtle shadow, replacing the
+   earlier "stamped document" motif with a conventional modern SaaS card. */
 .doc-card {
-  position: relative;
   background: #fff;
-  border: 1px solid #E4DCC8;
-  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
-}
-.doc-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 14px;
-  height: 14px;
-  background: #F3EFE3;
-  clip-path: polygon(0 0, 100% 0, 100% 100%);
-  border-bottom: 1px solid #E4DCC8;
-  border-left: 1px solid #E4DCC8;
+  border: 1px solid rgba(13,13,13,0.08);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgba(13,13,13,0.04);
 }
 
-/* A small ledger-style record tag, used for status pills instead of
-   generic rounded-full badges — rectangular, mono type, left rule. */
+/* Standard status pill */
 .record-tag {
-  font-family: 'IBM Plex Mono', monospace;
   font-size: 0.6875rem;
+  font-weight: 600;
   letter-spacing: 0.02em;
-  padding: 0.15rem 0.5rem;
-  border-left: 2px solid currentColor;
-  background: rgba(0,0,0,0.03);
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  background: rgba(13,13,13,0.06);
 }
 
-/* Subtle graph-paper texture for the plot-map background — evokes a
-   site layout / survey sheet without needing an image asset. */
-.grid-paper {
-  background-image:
-    linear-gradient(rgba(22,35,31,0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(22,35,31,0.05) 1px, transparent 1px);
-  background-size: 16px 16px;
+/* Responsive helper: horizontal scroll wrapper for wide tables on
+   tablet/mobile instead of squeezing columns unreadably. */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }

@@ -26,6 +26,9 @@ class BookingOut(BaseModel):
     total_price: float
     token_advance: float
     status: BookingStatus
+    customer_name: str | None = None
+    customer_phone: str | None = None
+    plot_number: str | None = None
 
     class Config:
         from_attributes = True

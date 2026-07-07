@@ -1,13 +1,13 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Routes, Route } from 'react-router-dom'
+import { Menu } from 'lucide-react'
 import Sidebar from './components/Sidebar'
 import ProtectedRoute from './components/ProtectedRoute'
+import { useAuth } from './context/AuthContext'
 
-// Route-level code splitting — each page (and its dependencies, like
-// recharts on Dashboard) only downloads when the user actually visits it,
-// instead of all bundling into one 690KB file loaded upfront on login.
 const Login = lazy(() => import('./pages/Login'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
+const PlatformDashboard = lazy(() => import('./pages/PlatformDashboard'))
 const Projects = lazy(() => import('./pages/Projects'))
 const Enquiries = lazy(() => import('./pages/Enquiries'))
 const Bookings = lazy(() => import('./pages/Bookings'))
@@ -22,14 +22,29 @@ function PageLoader() {
 }
 
 function AdminLayout({ children }) {
+  const [mobileOpen, setMobileOpen] = useState(false)
   return (
     <div className="flex">
-      <Sidebar />
-      <main className="flex-1 p-8 h-screen overflow-y-auto bg-parchment">
-        <Suspense fallback={<PageLoader />}>{children}</Suspense>
-      </main>
+      <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <div className="flex-1 min-w-0">
+        {/* Mobile top bar — hidden on desktop, gives access to the sidebar drawer */}
+        <div className="lg:hidden flex items-center gap-3 p-4 border-b border-ink/10 bg-white sticky top-0 z-20">
+          <button onClick={() => setMobileOpen(true)} className="text-ink">
+            <Menu size={22} />
+          </button>
+          <span className="font-display font-bold text-ink">OS2 PlotPro</span>
+        </div>
+        <main className="p-4 sm:p-6 lg:p-8 min-h-screen overflow-y-auto bg-parchment">
+          <Suspense fallback={<PageLoader />}>{children}</Suspense>
+        </main>
+      </div>
     </div>
   )
+}
+
+function HomeRoute() {
+  const { user } = useAuth()
+  return user?.role === 'platform_admin' ? <PlatformDashboard /> : <Dashboard />
 }
 
 export default function App() {
@@ -39,7 +54,7 @@ export default function App() {
         <Suspense fallback={<PageLoader />}><Login /></Suspense>
       } />
       <Route path="/" element={
-        <ProtectedRoute><AdminLayout><Dashboard /></AdminLayout></ProtectedRoute>
+        <ProtectedRoute><AdminLayout><HomeRoute /></AdminLayout></ProtectedRoute>
       } />
       <Route path="/projects" element={
         <ProtectedRoute><AdminLayout><Projects /></AdminLayout></ProtectedRoute>

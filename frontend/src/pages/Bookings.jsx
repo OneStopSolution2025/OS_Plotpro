@@ -110,6 +110,8 @@ export default function Bookings() {
           <thead className="bg-ink/5 text-ink/50 text-left font-mono text-xs uppercase tracking-wide">
             <tr>
               <th className="px-4 py-2">Booking ID</th>
+              <th className="px-4 py-2">Customer</th>
+              <th className="px-4 py-2">Plot</th>
               <th className="px-4 py-2">Total Price</th>
               <th className="px-4 py-2">Token Advance</th>
               <th className="px-4 py-2">Status</th>
@@ -120,6 +122,11 @@ export default function Bookings() {
             {bookings.map((b) => (
               <tr key={b.id} className="border-t border-ink/10">
                 <td className="px-4 py-2 text-ink/50 font-mono text-xs">{b.id.slice(0, 8)}</td>
+                <td className="px-4 py-2">
+                  <p className="font-medium text-ink">{b.customer_name || '—'}</p>
+                  <p className="text-xs text-ink/50 font-mono">{b.customer_phone || ''}</p>
+                </td>
+                <td className="px-4 py-2 text-ink/70 font-mono">{b.plot_number || '—'}</td>
                 <td className="px-4 py-2 text-ink font-mono">{formatMoney(b.total_price, currency)}</td>
                 <td className="px-4 py-2 text-ink/60 font-mono">{formatMoney(b.token_advance, currency)}</td>
                 <td className="px-4 py-2">
@@ -135,7 +142,7 @@ export default function Bookings() {
               </tr>
             ))}
             {bookings.length === 0 && (
-              <tr><td colSpan="5" className="px-4 py-6 text-center text-ink/40">No bookings found</td></tr>
+              <tr><td colSpan="7" className="px-4 py-6 text-center text-ink/40">No bookings found</td></tr>
             )}
           </tbody>
         </table>

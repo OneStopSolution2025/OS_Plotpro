@@ -24,7 +24,7 @@ class Booking(UUIDPKMixin, TenantScopedMixin, TimestampMixin, Base):
             "uq_one_active_booking_per_plot",
             "plot_id",
             unique=True,
-            postgresql_where=text("status != 'cancelled'"),
+            postgresql_where=text("status != 'CANCELLED'"),
         ),
     )
 

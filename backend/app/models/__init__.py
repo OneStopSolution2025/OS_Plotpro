@@ -10,3 +10,4 @@ from app.models.attendance import Attendance  # noqa
 from app.models.otp import CustomerOTP  # noqa
 from app.models.support_ticket import SupportTicket  # noqa
 from app.models.payment_order import PaymentOrder  # noqa
+from app.models.commission_payout import CommissionPayout  # noqa

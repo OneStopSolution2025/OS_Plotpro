@@ -4,35 +4,37 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: '#16231F',
-        parchment: '#F3EFE3',
-        // "brand" kept as the key name so existing brand-* classes pick up
-        // the new palette automatically — this IS the survey-green scale.
+        ink: '#0D0D0D',       // OS2 brand black
+        parchment: '#F7F7F5', // neutral light background, not cream/paper
+        // "brand" = OS2 gold #F0A500, kept as the key name so all existing
+        // brand-* classes across the app pick this up automatically.
         brand: {
-          50: '#EAF3EE',
-          100: '#CFE4D8',
-          300: '#8FBFA0',
-          500: '#2F6B4F',
-          600: '#255A41',
-          700: '#1D4834',
+          50: '#FDF4E0',
+          100: '#FBE7B8',
+          300: '#F5C563',
+          500: '#F0A500',
+          600: '#CC8B00',
+          700: '#A66F00',
         },
+        // "brass" = OS2 secondary lime #B5DE00
         brass: {
-          50: '#FBF3E4',
-          100: '#F3E0B8',
-          400: '#C79A4B',
-          500: '#B8863B',
-          600: '#9C6F2E',
+          50: '#F5FBE0',
+          100: '#E8F5B8',
+          400: '#C5E85C',
+          500: '#B5DE00',
+          600: '#94B800',
         },
+        // kept for error/destructive states — not a brand color, functional only
         rust: {
-          50: '#F7E9E4',
-          100: '#EBC7B9',
-          400: '#C15A3D',
-          500: '#A6432B',
-          600: '#8A3521',
+          50: '#FCEBEA',
+          100: '#F5C2BE',
+          400: '#E0574A',
+          500: '#D6362A',
+          600: '#B32B21',
         },
       },
       fontFamily: {
-        display: ['Fraunces', 'serif'],
+        display: ['Inter', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'monospace'],
       },

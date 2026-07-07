@@ -84,7 +84,26 @@ async def list_bookings(
         # Booking ID is a UUID; allow searching by its string prefix
         query = query.where(func.cast(Booking.id, String).ilike(f"{search}%"))
     result = await db.execute(query.order_by(Booking.created_at.desc()))
-    return result.scalars().all()
+    bookings = result.scalars().all()
+
+    out = []
+    for b in bookings:
+        cust_result = await db.execute(select(Customer).where(Customer.id == b.customer_id))
+        customer = cust_result.scalar_one_or_none()
+        plot_result = await db.execute(select(Plot).where(Plot.id == b.plot_id))
+        plot = plot_result.scalar_one_or_none()
+        out.append({
+            "id": b.id,
+            "plot_id": b.plot_id,
+            "customer_id": b.customer_id,
+            "total_price": b.total_price,
+            "token_advance": b.token_advance,
+            "status": b.status,
+            "customer_name": customer.full_name if customer else None,
+            "customer_phone": customer.phone if customer else None,
+            "plot_number": plot.plot_number if plot else None,
+        })
+    return out
 
 
 @router.post("/{booking_id}/cancel", response_model=BookingOut)
