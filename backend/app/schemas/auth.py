@@ -15,6 +15,7 @@ class UserOut(BaseModel):
     role: UserRole
     tenant_id: uuid.UUID
     tenant_currency: str = "INR"
+    is_active: bool = True
 
     class Config:
         from_attributes = True

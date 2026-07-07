@@ -15,6 +15,7 @@ export default function Bookings() {
     plot_id: '', customer_name: '', customer_phone: '', token_advance: '',
   })
   const [open, setOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const { showToast } = useToast()
 
   const loadBookings = () => {
@@ -29,6 +30,8 @@ export default function Bookings() {
 
   const submit = async (e) => {
     e.preventDefault()
+    if (submitting) return
+    setSubmitting(true)
     try {
       await api.post('/bookings', {
         plot_id: form.plot_id,
@@ -42,6 +45,8 @@ export default function Bookings() {
       loadPlots()
     } catch (err) {
       showToast(errorMessage(err, 'Could not create booking'), 'error')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -93,7 +98,9 @@ export default function Bookings() {
           <input placeholder="Token advance" type="number" value={form.token_advance}
             onChange={(e) => setForm({ ...form, token_advance: e.target.value })}
             className="border border-ink/15 px-3 py-2 text-sm w-32 font-mono" />
-          <button type="submit" className="bg-brand-600 text-white px-4 py-2 text-sm">Book</button>
+          <button type="submit" disabled={submitting} className="bg-brand-600 text-white px-4 py-2 text-sm disabled:opacity-60">
+            {submitting ? 'Booking...' : 'Book'}
+          </button>
           <button type="button" onClick={() => setOpen(false)} className="text-sm text-ink/50 px-2">Cancel</button>
         </form>
       )}

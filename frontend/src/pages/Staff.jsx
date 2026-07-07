@@ -1,10 +1,70 @@
 import { useEffect, useState } from 'react'
-import { Download, DollarSign } from 'lucide-react'
+import { Download, DollarSign, UserPlus } from 'lucide-react'
 import api from '../api/client'
 import { useToast } from '../context/ToastContext'
 import { errorMessage } from '../utils/errors'
 import { formatMoney } from '../utils/currency'
 import { useAuth } from '../context/AuthContext'
+
+const ROLES = ['sales_executive', 'sales_manager', 'accountant', 'site_supervisor', 'org_admin']
+
+function NewStaffForm({ onCreated }) {
+  const [form, setForm] = useState({ full_name: '', email: '', phone: '', password: '', role: 'sales_executive' })
+  const [open, setOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const { showToast } = useToast()
+
+  const submit = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      await api.post('/auth/staff', form)
+      showToast(`${form.full_name} added as ${form.role.replace('_', ' ')}`, 'success')
+      setForm({ full_name: '', email: '', phone: '', password: '', role: 'sales_executive' })
+      setOpen(false)
+      onCreated()
+    } catch (err) {
+      showToast(errorMessage(err, 'Could not add staff member'), 'error')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 text-sm text-brand-700 font-medium hover:underline">
+        <UserPlus size={15} /> Add staff
+      </button>
+    )
+  }
+
+  return (
+    <form onSubmit={submit} className="doc-card p-4 grid grid-cols-2 gap-2 mb-4">
+      <input placeholder="Full name" required value={form.full_name}
+        onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+        className="border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+      <input placeholder="Email" type="email" required value={form.email}
+        onChange={(e) => setForm({ ...form, email: e.target.value })}
+        className="border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+      <input placeholder="Phone" value={form.phone}
+        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+        className="border border-ink/15 px-3 py-2 text-sm font-mono focus:border-brand-500 focus:outline-none" />
+      <input placeholder="Temporary password" type="password" required value={form.password}
+        onChange={(e) => setForm({ ...form, password: e.target.value })}
+        className="border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+      <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}
+        className="col-span-2 border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
+        {ROLES.map((r) => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
+      </select>
+      <div className="col-span-2 flex gap-2">
+        <button type="submit" disabled={submitting} className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 text-sm transition disabled:opacity-60">
+          {submitting ? 'Adding...' : 'Add staff member'}
+        </button>
+        <button type="button" onClick={() => setOpen(false)} className="text-sm text-ink/50 hover:text-ink">Cancel</button>
+      </div>
+    </form>
+  )
+}
 
 function PayoutModal({ staff, onClose, onRecorded }) {
   const [payouts, setPayouts] = useState(null)
@@ -110,6 +170,17 @@ export default function Staff() {
     }
   }
 
+  const deactivate = async (id, name) => {
+    if (!window.confirm(`Deactivate ${name}'s account? They will no longer be able to log in.`)) return
+    try {
+      await api.patch(`/staff/${id}/deactivate`)
+      showToast('Staff account deactivated', 'success')
+      load()
+    } catch (err) {
+      showToast(errorMessage(err), 'error')
+    }
+  }
+
   const exportCsv = async () => {
     try {
       const res = await api.get('/staff/export/commissions.csv', { responseType: 'blob' })
@@ -135,6 +206,8 @@ export default function Staff() {
         </button>
       </div>
 
+      <NewStaffForm onCreated={load} />
+
       <div className="doc-card overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-ink/5 text-ink/50 text-left font-mono text-xs uppercase tracking-wide">
@@ -150,7 +223,7 @@ export default function Staff() {
             {staff.map((s) => (
               <>
                 <tr key={s.id} className="border-t border-ink/10">
-                  <td className="px-4 py-2 font-medium text-ink">{s.full_name}</td>
+                  <td className="px-4 py-2 font-medium text-ink">{s.full_name}{!s.is_active && <span className="ml-2 record-tag text-rust-500">inactive</span>}</td>
                   <td className="px-4 py-2 text-ink/60">{s.role}</td>
                   <td className="px-4 py-2 text-ink/60 font-mono">{s.monthly_target ?? '-'}</td>
                   <td className="px-4 py-2 text-ink/60 font-mono">{s.commission_percent ?? '-'}</td>
@@ -160,6 +233,9 @@ export default function Staff() {
                     <button onClick={() => setPayoutStaff(s)} className="text-xs text-brass-600 hover:underline inline-flex items-center gap-1">
                       <DollarSign size={11} /> Payouts
                     </button>
+                    {s.is_active && (
+                      <button onClick={() => deactivate(s.id, s.full_name)} className="text-xs text-rust-500 hover:underline">Deactivate</button>
+                    )}
                   </td>
                 </tr>
                 {performance[s.id] && (

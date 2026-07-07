@@ -40,6 +40,46 @@ async def list_projects(
     return result.scalars().all()
 
 
+@router.patch("/projects/{project_id}", response_model=ProjectOut)
+async def update_project(
+    project_id: uuid.UUID,
+    payload: ProjectCreate,
+    db: AsyncSession = Depends(get_db),
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    _user: User = Depends(require_roles(UserRole.ORG_ADMIN, UserRole.SALES_MANAGER)),
+):
+    result = await db.execute(select(Project).where(Project.id == project_id, Project.tenant_id == tenant_id))
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(project, field, value)
+    await db.commit()
+    await db.refresh(project)
+    return project
+
+
+@router.delete("/projects/{project_id}")
+async def delete_project(
+    project_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    tenant_id: uuid.UUID = Depends(get_tenant_id),
+    _user: User = Depends(require_roles(UserRole.ORG_ADMIN)),
+):
+    result = await db.execute(select(Project).where(Project.id == project_id, Project.tenant_id == tenant_id))
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    plots_result = await db.execute(select(Plot).where(Plot.project_id == project_id))
+    if plots_result.scalars().first():
+        raise HTTPException(status_code=400, detail="Cannot delete a project that still has plots. Remove its plots first.")
+
+    await db.delete(project)
+    await db.commit()
+    return {"status": "deleted"}
+
+
 # ---------- Plots ----------
 
 @router.post("", response_model=PlotOut, status_code=status.HTTP_201_CREATED)

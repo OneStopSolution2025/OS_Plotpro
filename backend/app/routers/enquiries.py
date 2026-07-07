@@ -2,6 +2,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel
 
 from app.core.database import get_db
@@ -172,6 +173,13 @@ async def convert_to_booking(
     plot.status = PlotStatus.BOOKED
     enquiry.stage = EnquiryStage.CONVERTED
 
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="This plot was just booked (possibly by a duplicate click or another staff member). Please refresh and pick a different plot.",
+        )
     await db.refresh(booking)
     return {"booking_id": str(booking.id), "status": "converted"}

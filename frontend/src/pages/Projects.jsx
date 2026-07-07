@@ -62,6 +62,53 @@ function NewProjectForm({ onCreated }) {
   )
 }
 
+function EditProjectForm({ project, onDone, onUpdated }) {
+  const [form, setForm] = useState({
+    name: project.name, location: project.location || '', survey_number: project.survey_number || '',
+    dtcp_approval_no: project.dtcp_approval_no || '', rera_reg_no: project.rera_reg_no || '', description: project.description || '',
+  })
+  const { showToast } = useToast()
+
+  const submit = async (e) => {
+    e.preventDefault()
+    try {
+      await api.patch(`/plots/projects/${project.id}`, form)
+      showToast('Project updated', 'success')
+      onDone()
+      onUpdated()
+    } catch (err) {
+      showToast(errorMessage(err, 'Could not update project'), 'error')
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="doc-card p-4 space-y-2 mb-4">
+      <input placeholder="Project name" required value={form.name}
+        onChange={(e) => setForm({ ...form, name: e.target.value })}
+        className="w-full border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+      <input placeholder="Location" value={form.location}
+        onChange={(e) => setForm({ ...form, location: e.target.value })}
+        className="w-full border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+      <input placeholder="Survey number" value={form.survey_number}
+        onChange={(e) => setForm({ ...form, survey_number: e.target.value })}
+        className="w-full border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+      <input placeholder="DTCP approval no." value={form.dtcp_approval_no}
+        onChange={(e) => setForm({ ...form, dtcp_approval_no: e.target.value })}
+        className="w-full border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+      <input placeholder="RERA registration no." value={form.rera_reg_no}
+        onChange={(e) => setForm({ ...form, rera_reg_no: e.target.value })}
+        className="w-full border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+      <textarea placeholder="Description" value={form.description} rows={2}
+        onChange={(e) => setForm({ ...form, description: e.target.value })}
+        className="w-full border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+      <div className="flex gap-2">
+        <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 text-sm transition">Save changes</button>
+        <button type="button" onClick={onDone} className="text-sm text-ink/50 hover:text-ink">Cancel</button>
+      </div>
+    </form>
+  )
+}
+
 // Plot form used both for the classic grid flow (no position) and the
 // map flow (pre-filled x/y percent from a click on the layout image).
 function NewPlotForm({ projectId, presetPosition, onDone, onCreated }) {
@@ -439,6 +486,7 @@ export default function Projects() {
   const currency = user?.tenant_currency || 'INR'
   const [projects, setProjects] = useState([])
   const [selectedProject, setSelectedProject] = useState(null)
+  const [editingProject, setEditingProject] = useState(null)
   const [plots, setPlots] = useState([])
   const [view, setView] = useState('map') // 'map' | 'grid'
   const [search, setSearch] = useState('')
@@ -464,6 +512,19 @@ export default function Projects() {
     if (selectedProject) loadPlots(selectedProject.id)
   }, [selectedProject?.id])
 
+  const { showToast } = useToast()
+  const deleteProject = async (project) => {
+    if (!window.confirm(`Delete "${project.name}"? This only works if it has no plots.`)) return
+    try {
+      await api.delete(`/plots/projects/${project.id}`)
+      showToast('Project deleted', 'success')
+      if (selectedProject?.id === project.id) setSelectedProject(null)
+      loadProjects()
+    } catch (err) {
+      showToast(errorMessage(err, 'Could not delete project'), 'error')
+    }
+  }
+
   const filteredPlots = plots.filter((p) =>
     p.plot_number.toLowerCase().includes(search.toLowerCase())
   )
@@ -479,16 +540,30 @@ export default function Projects() {
           <NewProjectForm onCreated={loadProjects} />
           <div className="space-y-2 mt-3">
             {projects.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setSelectedProject(p)}
-                className={`w-full text-left p-3 border transition ${
-                  selectedProject?.id === p.id ? 'border-brand-600 bg-brand-50' : 'border-ink/10 bg-white hover:border-ink/25'
-                }`}
-              >
-                <p className="font-medium text-ink text-sm">{p.name}</p>
-                <p className="text-xs text-ink/50 flex items-center gap-1"><MapPin size={11} />{p.location || 'No location set'}</p>
-              </button>
+              editingProject?.id === p.id ? (
+                <EditProjectForm
+                  key={p.id}
+                  project={p}
+                  onDone={() => setEditingProject(null)}
+                  onUpdated={loadProjects}
+                />
+              ) : (
+                <div
+                  key={p.id}
+                  className={`w-full text-left p-3 border transition ${
+                    selectedProject?.id === p.id ? 'border-brand-600 bg-brand-50' : 'border-ink/10 bg-white hover:border-ink/25'
+                  }`}
+                >
+                  <button onClick={() => setSelectedProject(p)} className="w-full text-left">
+                    <p className="font-medium text-ink text-sm">{p.name}</p>
+                    <p className="text-xs text-ink/50 flex items-center gap-1"><MapPin size={11} />{p.location || 'No location set'}</p>
+                  </button>
+                  <div className="flex gap-3 mt-1.5">
+                    <button onClick={() => setEditingProject(p)} className="text-xs text-brand-700 hover:underline">Edit</button>
+                    <button onClick={() => deleteProject(p)} className="text-xs text-rust-500 hover:underline">Delete</button>
+                  </div>
+                </div>
+              )
             ))}
             {projects.length === 0 && <p className="text-sm text-ink/40">No projects yet — create one to get started.</p>}
           </div>

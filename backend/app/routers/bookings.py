@@ -2,6 +2,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, String
+from sqlalchemy.exc import IntegrityError
 
 from app.core.database import get_db
 from app.core.deps import get_current_user, get_tenant_id
@@ -59,7 +60,14 @@ async def create_booking(
     db.add(booking)
     plot.status = PlotStatus.BOOKED
 
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="This plot was just booked (possibly by a duplicate click or another staff member). Please refresh and pick a different plot.",
+        )
     await db.refresh(booking)
     return booking
 
