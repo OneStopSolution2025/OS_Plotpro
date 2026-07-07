@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { LogIn } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -66,6 +66,10 @@ export default function Login() {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        <p className="text-sm text-ink/50 mt-5 text-center">
+          New promoter? <Link to="/signup" className="text-brand-600 font-medium hover:underline">Sign up here</Link>
+        </p>
       </div>
     </div>
   )

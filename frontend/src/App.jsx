@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import { useAuth } from './context/AuthContext'
 
 const Login = lazy(() => import('./pages/Login'))
+const Signup = lazy(() => import('./pages/Signup'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const PlatformDashboard = lazy(() => import('./pages/PlatformDashboard'))
 const Projects = lazy(() => import('./pages/Projects'))
@@ -52,6 +53,9 @@ export default function App() {
     <Routes>
       <Route path="/login" element={
         <Suspense fallback={<PageLoader />}><Login /></Suspense>
+      } />
+      <Route path="/signup" element={
+        <Suspense fallback={<PageLoader />}><Signup /></Suspense>
       } />
       <Route path="/" element={
         <ProtectedRoute><AdminLayout><HomeRoute /></AdminLayout></ProtectedRoute>

@@ -1,10 +1,64 @@
 import { useEffect, useState } from 'react'
-import { Plus, CheckCircle2, Ban } from 'lucide-react'
+import { Plus, CheckCircle2, Ban, Pencil, Trash2 } from 'lucide-react'
 import api from '../api/client'
 import { useToast } from '../context/ToastContext'
 import { errorMessage } from '../utils/errors'
 
 const CURRENCIES = ['INR', 'MYR', 'SGD', 'AED', 'AUD', 'LKR']
+const PLANS = ['trial', 'basic', 'pro', 'enterprise']
+
+function EditTenantForm({ tenant, onDone, onUpdated }) {
+  const [form, setForm] = useState({
+    company_name: tenant.company_name,
+    contact_email: '',
+    contact_phone: '',
+    country: '',
+    currency: '',
+    subscription_plan: tenant.subscription_plan,
+  })
+  const { showToast } = useToast()
+
+  const submit = async (e) => {
+    e.preventDefault()
+    try {
+      const payload = Object.fromEntries(Object.entries(form).filter(([, v]) => v !== ''))
+      await api.patch(`/tenants/${tenant.id}`, payload)
+      showToast('Promoter details updated', 'success')
+      onDone()
+      onUpdated()
+    } catch (err) {
+      showToast(errorMessage(err, 'Could not update promoter'), 'error')
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="doc-card p-5 space-y-2">
+      <p className="font-display font-semibold text-ink mb-1">Edit {tenant.company_name}</p>
+      <input placeholder="Company name" value={form.company_name}
+        onChange={(e) => setForm({ ...form, company_name: e.target.value })}
+        className="w-full border border-ink/15 px-3 py-2 text-sm rounded-lg focus:border-brand-500 focus:outline-none" />
+      <input placeholder="Contact email (leave blank to keep)" value={form.contact_email}
+        onChange={(e) => setForm({ ...form, contact_email: e.target.value })}
+        className="w-full border border-ink/15 px-3 py-2 text-sm rounded-lg focus:border-brand-500 focus:outline-none" />
+      <input placeholder="Contact phone (leave blank to keep)" value={form.contact_phone}
+        onChange={(e) => setForm({ ...form, contact_phone: e.target.value })}
+        className="w-full border border-ink/15 px-3 py-2 text-sm rounded-lg font-mono focus:border-brand-500 focus:outline-none" />
+      <select value={form.subscription_plan} onChange={(e) => setForm({ ...form, subscription_plan: e.target.value })}
+        className="w-full border border-ink/15 px-3 py-2 text-sm rounded-lg focus:border-brand-500 focus:outline-none">
+        {PLANS.map((p) => <option key={p} value={p}>{p}</option>)}
+      </select>
+      <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}
+        className="w-full border border-ink/15 px-3 py-2 text-sm rounded-lg focus:border-brand-500 focus:outline-none">
+        <option value="">Keep current currency</option>
+        {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+      </select>
+      <div className="flex gap-2 pt-1">
+        <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 rounded-lg text-sm transition">Save</button>
+        <button type="button" onClick={onDone} className="text-sm text-ink/50 hover:text-ink">Cancel</button>
+      </div>
+    </form>
+  )
+}
 
 function NewPromoterForm({ onCreated }) {
   const [open, setOpen] = useState(false)
@@ -80,6 +134,7 @@ function NewPromoterForm({ onCreated }) {
 export default function Tenants() {
   const [tenants, setTenants] = useState([])
   const [loading, setLoading] = useState(true)
+  const [editingTenant, setEditingTenant] = useState(null)
   const { showToast } = useToast()
 
   const load = () => {
@@ -101,6 +156,17 @@ export default function Tenants() {
     }
   }
 
+  const deleteTenant = async (tenant) => {
+    if (!window.confirm(`Permanently delete "${tenant.company_name}"? This only works if they have no plots or bookings.`)) return
+    try {
+      await api.delete(`/tenants/${tenant.id}`)
+      showToast('Promoter deleted', 'success')
+      load()
+    } catch (err) {
+      showToast(errorMessage(err, 'Could not delete promoter'), 'error')
+    }
+  }
+
   if (loading) return <div className="p-6 text-ink/50 text-sm">Loading...</div>
 
   return (
@@ -112,6 +178,14 @@ export default function Tenants() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {tenants.map((t) => (
+          editingTenant?.id === t.id ? (
+            <EditTenantForm
+              key={t.id}
+              tenant={t}
+              onDone={() => setEditingTenant(null)}
+              onUpdated={load}
+            />
+          ) : (
           <div key={t.id} className="doc-card p-5">
             <div className="flex items-start justify-between mb-2">
               <div>
@@ -137,13 +211,22 @@ export default function Tenants() {
               </div>
             </div>
             <p className="text-xs text-ink/50 mb-3">Plan: <span className="font-mono">{t.subscription_plan}</span></p>
-            <button
-              onClick={() => toggleStatus(t.id, t.is_active)}
-              className={`flex items-center gap-1.5 text-xs font-medium hover:underline ${t.is_active ? 'text-rust-500' : 'text-brand-600'}`}
-            >
-              {t.is_active ? <><Ban size={12} /> Suspend access</> : <><CheckCircle2 size={12} /> Approve & activate</>}
-            </button>
+            <div className="flex flex-wrap items-center gap-4">
+              <button
+                onClick={() => toggleStatus(t.id, t.is_active)}
+                className={`flex items-center gap-1.5 text-xs font-medium hover:underline ${t.is_active ? 'text-rust-500' : 'text-brand-600'}`}
+              >
+                {t.is_active ? <><Ban size={12} /> Suspend</> : <><CheckCircle2 size={12} /> Approve & activate</>}
+              </button>
+              <button onClick={() => setEditingTenant(t)} className="flex items-center gap-1.5 text-xs font-medium text-ink/60 hover:underline">
+                <Pencil size={12} /> Edit
+              </button>
+              <button onClick={() => deleteTenant(t)} className="flex items-center gap-1.5 text-xs font-medium text-rust-500 hover:underline">
+                <Trash2 size={12} /> Delete
+              </button>
+            </div>
           </div>
+          )
         ))}
         {tenants.length === 0 && (
           <p className="text-sm text-ink/40 col-span-full">No promoters onboarded yet.</p>

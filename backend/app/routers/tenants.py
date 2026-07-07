@@ -32,11 +32,32 @@ async def onboard_tenant(
     db: AsyncSession = Depends(get_db),
     _admin: User = Depends(require_roles(UserRole.PLATFORM_ADMIN)),
 ):
-    """Creates a new promoter (tenant) + their first ORG_ADMIN login in one go.
-    This is how you (OS2) onboard a new client onto PlotPro."""
+    """Platform-admin-initiated onboarding — used when OS2 sets up a
+    promoter directly rather than the promoter signing themselves up."""
+    return await _create_tenant_and_admin(payload, db)
+
+
+@router.post("/signup", status_code=status.HTTP_201_CREATED)
+async def signup_tenant(
+    payload: TenantOnboard,
+    db: AsyncSession = Depends(get_db),
+):
+    """Public self-registration — no login required. A prospective promoter
+    fills this in themselves (company details + their own admin credentials),
+    lands in 'pending' status, and can't log in until OS2's Supreme Admin
+    reviews and approves them from All Promoters. Same pattern as WashPro's
+    self-registration + SuperAdmin approval flow."""
+    return await _create_tenant_and_admin(payload, db)
+
+
+async def _create_tenant_and_admin(payload: "TenantOnboard", db: AsyncSession):
     existing = await db.execute(select(Tenant).where(Tenant.subdomain == payload.subdomain))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Subdomain already taken")
+
+    existing_email = await db.execute(select(User).where(User.email == payload.contact_email))
+    if existing_email.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="An account with this email already exists")
 
     tenant = Tenant(
         company_name=payload.company_name,
@@ -106,3 +127,60 @@ async def set_tenant_status(
     tenant.is_active = is_active
     await db.commit()
     return {"status": "updated", "is_active": tenant.is_active}
+
+
+class TenantUpdate(BaseModel):
+    company_name: str | None = None
+    contact_email: EmailStr | None = None
+    contact_phone: str | None = None
+    country: str | None = None
+    currency: str | None = None
+    subscription_plan: SubscriptionPlan | None = None
+
+
+@router.patch("/{tenant_id}")
+async def update_tenant(
+    tenant_id: uuid.UUID,
+    payload: TenantUpdate,
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(require_roles(UserRole.PLATFORM_ADMIN)),
+):
+    result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
+    tenant = result.scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(tenant, field, value)
+    await db.commit()
+    return {"status": "updated"}
+
+
+@router.delete("/{tenant_id}")
+async def delete_tenant(
+    tenant_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(require_roles(UserRole.PLATFORM_ADMIN)),
+):
+    """Permanently removes a promoter and its staff logins. Blocked if the
+    promoter has any plots or bookings — that's real business data and
+    should be handled deliberately (export/archive), not casually deleted."""
+    result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
+    tenant = result.scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    plot_count = len((await db.execute(select(Plot).where(Plot.tenant_id == tenant_id))).scalars().all())
+    booking_count = len((await db.execute(select(Booking).where(Booking.tenant_id == tenant_id))).scalars().all())
+    if plot_count > 0 or booking_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot delete — this promoter has {plot_count} plots and {booking_count} bookings. Remove their business data first.",
+        )
+
+    staff_result = await db.execute(select(User).where(User.tenant_id == tenant_id))
+    for staff in staff_result.scalars().all():
+        await db.delete(staff)
+
+    await db.delete(tenant)
+    await db.commit()
+    return {"status": "deleted"}
