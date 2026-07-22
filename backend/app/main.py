@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +10,15 @@ from app.services.reminders import start_scheduler
 
 import os
 os.makedirs("uploads", exist_ok=True)
+
+# Without this, Python's root logger defaults to WARNING and silently drops
+# every logger.info() call — including the OTP codes and reminder messages
+# printed by services/notifications.py when Twilio isn't configured. This
+# is what makes them actually show up in Railway's Deploy Logs.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
 
 
 @asynccontextmanager
