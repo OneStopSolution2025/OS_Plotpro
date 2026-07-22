@@ -5,16 +5,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
-from app.routers import auth, tenants, plots, enquiries, bookings, emi, staff, customer_auth, uploads, support_tickets, payment_gateway, geocode
+from app.routers import auth, tenants, plots, enquiries, bookings, emi, staff, customer_auth, uploads, support_tickets, payment_gateway, geocode, subscription_plans
 from app.services.reminders import start_scheduler
 
 import os
 os.makedirs("uploads", exist_ok=True)
 
-# Without this, Python's root logger defaults to WARNING and silently drops
-# every logger.info() call — including the OTP codes and reminder messages
-# printed by services/notifications.py when Twilio isn't configured. This
-# is what makes them actually show up in Railway's Deploy Logs.
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
@@ -30,7 +26,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.APP_NAME, version="0.2.0", lifespan=lifespan)
 
-# Tighten this to your actual frontend domain(s) before going to production
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -53,6 +48,7 @@ app.include_router(uploads.router)
 app.include_router(support_tickets.router)
 app.include_router(payment_gateway.router)
 app.include_router(geocode.router)
+app.include_router(subscription_plans.router)
 
 
 @app.get("/")

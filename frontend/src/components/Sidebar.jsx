@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, MapPinned, Phone, FileSignature, CreditCard, Users, FileText, LifeBuoy, Building2, LogOut, X } from 'lucide-react'
+import { LayoutDashboard, MapPinned, Phone, FileSignature, CreditCard, Users, FileText, LifeBuoy, Building2, LogOut, X, Copy, Check, Wallet, Tag } from 'lucide-react'
+import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 
 const links = [
@@ -11,13 +12,42 @@ const links = [
   { to: '/staff', label: 'Staff', icon: Users },
   { to: '/documents', label: 'Legal Documents', icon: FileText },
   { to: '/support', label: 'Support Tickets', icon: LifeBuoy },
+  { to: '/my-plan', label: 'My Plan', icon: Wallet },
 ]
 
 const platformLinks = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/tenants', label: 'All Promoters', icon: Building2 },
+  { to: '/subscription-plans', label: 'Subscription Plans', icon: Tag },
   { to: '/support', label: 'Support Tickets', icon: LifeBuoy },
 ]
+
+// Shows the tenant's subdomain — the exact code customers must type into
+// the portal login. Clearly separate from the admin's own name (which
+// used to be the only thing shown here, causing staff to mix the two up).
+function PromoterCodeBadge({ subdomain }) {
+  const [copied, setCopied] = useState(false)
+  if (!subdomain) return null
+
+  const copy = () => {
+    navigator.clipboard.writeText(subdomain)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+
+  return (
+    <div className="mx-1 mb-3 p-3 rounded-lg bg-brand-500/10 border border-brand-500/20">
+      <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Customer Promoter Code</p>
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-mono text-sm text-brand-400 font-semibold">{subdomain}</span>
+        <button onClick={copy} className="text-white/50 hover:text-white transition flex-shrink-0">
+          {copied ? <Check size={14} /> : <Copy size={14} />}
+        </button>
+      </div>
+      <p className="text-[11px] text-white/40 mt-1">Give this to customers to log into their portal — not your own name.</p>
+    </div>
+  )
+}
 
 export default function Sidebar({ mobileOpen, onClose }) {
   const { user, logout } = useAuth()
@@ -26,7 +56,6 @@ export default function Sidebar({ mobileOpen, onClose }) {
 
   return (
     <>
-      {/* Mobile backdrop */}
       {mobileOpen && (
         <div className="fixed inset-0 bg-black/40 z-30 lg:hidden" onClick={onClose} />
       )}
@@ -52,6 +81,8 @@ export default function Sidebar({ mobileOpen, onClose }) {
         </div>
 
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+          {!isPlatformAdmin && <PromoterCodeBadge subdomain={user?.tenant_subdomain} />}
+
           {navLinks.map((link) => (
             <NavLink
               key={link.to}

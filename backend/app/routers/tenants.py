@@ -240,3 +240,44 @@ async def delete_tenant(
     await db.delete(tenant)
     await db.commit()
     return {"status": "deleted"}
+
+
+@router.get("/my-plan")
+async def my_plan(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_roles(UserRole.ORG_ADMIN, UserRole.SALES_MANAGER, UserRole.SALES_EXECUTIVE, UserRole.ACCOUNTANT, UserRole.SITE_SUPERVISOR)),
+):
+    """Self-service — any staff member can see their own promoter's current
+    plan, expiry, and change history. No platform-admin role required,
+    since this is about MY OWN subscription, not someone else's."""
+    result = await db.execute(select(Tenant).where(Tenant.id == user.tenant_id))
+    tenant = result.scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    days_to_expiry = None
+    if tenant.subscription_expires_at:
+        days_to_expiry = (tenant.subscription_expires_at - date.today()).days
+
+    history_result = await db.execute(
+        select(TenantPlanHistory).where(TenantPlanHistory.tenant_id == tenant.id).order_by(TenantPlanHistory.created_at.desc())
+    )
+    history = history_result.scalars().all()
+
+    return {
+        "company_name": tenant.company_name,
+        "subscription_plan": tenant.subscription_plan,
+        "subscription_expires_at": tenant.subscription_expires_at,
+        "days_to_expiry": days_to_expiry,
+        "is_active": tenant.is_active,
+        "history": [
+            {
+                "old_plan": h.old_plan,
+                "new_plan": h.new_plan,
+                "old_expires_at": h.old_expires_at,
+                "new_expires_at": h.new_expires_at,
+                "changed_at": h.created_at,
+            }
+            for h in history
+        ],
+    }
