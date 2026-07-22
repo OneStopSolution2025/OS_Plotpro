@@ -1,6 +1,6 @@
 import uuid
 import enum
-from sqlalchemy import String, Float, ForeignKey, Enum, Text
+from sqlalchemy import String, Float, ForeignKey, Enum, Text, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
@@ -66,6 +66,14 @@ class Plot(UUIDPKMixin, TenantScopedMixin, TimestampMixin, Base):
     amenities: Mapped[str] = mapped_column(Text, nullable=True)  # comma-separated, e.g. "Park facing, Underground drainage"
     patta_number: Mapped[str] = mapped_column(String(100), nullable=True)
     google_maps_link: Mapped[str] = mapped_column(String(500), nullable=True)
+
+    # Approval status captured per-plot at creation time (not just at the
+    # project level) — some layouts have phased/partial DTCP or RERA
+    # approval, so individual plots can differ.
+    dtcp_approved: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    dtcp_number: Mapped[str] = mapped_column(String(100), nullable=True)
+    rera_approved: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    rera_number: Mapped[str] = mapped_column(String(100), nullable=True)
 
     # Coordinates for the clickable layout map overlay (percentage-based x/y
     # on top of layout_image_url, so it works regardless of image resolution)

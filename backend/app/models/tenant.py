@@ -1,4 +1,5 @@
-from sqlalchemy import String, Boolean, Enum
+from datetime import date
+from sqlalchemy import String, Boolean, Enum, Date
 from sqlalchemy.orm import Mapped, mapped_column
 import enum
 from app.core.database import Base
@@ -18,7 +19,7 @@ class Tenant(UUIDPKMixin, TimestampMixin, Base):
     __tablename__ = "tenants"
 
     company_name: Mapped[str] = mapped_column(String(200), nullable=False)
-    subdomain: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)  # e.g. dreamcity.plotpro.app
+    subdomain: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)  # internal identifier only
     contact_email: Mapped[str] = mapped_column(String(200), nullable=False)
     contact_phone: Mapped[str] = mapped_column(String(20), nullable=True)
     country: Mapped[str] = mapped_column(String(50), default="India")
@@ -29,4 +30,5 @@ class Tenant(UUIDPKMixin, TimestampMixin, Base):
     subscription_plan: Mapped[SubscriptionPlan] = mapped_column(
         Enum(SubscriptionPlan), default=SubscriptionPlan.TRIAL
     )
+    subscription_expires_at: Mapped[date] = mapped_column(Date, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

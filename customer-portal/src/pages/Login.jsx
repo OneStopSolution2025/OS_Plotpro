@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCustomerAuth } from '../context/CustomerAuthContext'
 
+const inputClass = "mt-1.5 w-full border border-ink/15 rounded-lg px-3 py-2 text-sm bg-surface text-ink placeholder:text-ink/30 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+
 export default function Login() {
   const [step, setStep] = useState('phone') // 'phone' | 'otp'
-  const [subdomain, setSubdomain] = useState(localStorage.getItem('plotpro_tenant_subdomain') || '')
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
   const [error, setError] = useState('')
@@ -17,7 +18,7 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      await requestOtp(subdomain, phone)
+      await requestOtp(phone)
       setStep('otp')
     } catch (err) {
       setError(err.response?.data?.detail || 'Could not send OTP')
@@ -31,7 +32,7 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      await verifyOtp(subdomain, phone, otp)
+      await verifyOtp(phone, otp)
       navigate('/')
     } catch (err) {
       setError(err.response?.data?.detail || 'Invalid OTP')
@@ -43,7 +44,7 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-panel px-4">
       <div className="doc-card p-9 w-full max-w-sm shadow-xl">
-        <p className="font-mono text-[11px] tracking-widest uppercase text-brass-600 mb-1">Customer Portal</p>
+        <p className="font-mono text-[11px] tracking-widest uppercase text-brass-500 mb-1">Customer Portal</p>
         <h1 className="font-display text-3xl font-semibold text-ink mb-1">My Plot</h1>
         <p className="text-sm text-ink/60 mb-7">
           {step === 'phone' ? 'Sign in with your registered phone number' : 'Enter the OTP sent to your phone'}
@@ -52,24 +53,13 @@ export default function Login() {
         {step === 'phone' ? (
           <form onSubmit={sendOtp} className="space-y-4">
             <div>
-              <label className="text-xs font-medium text-ink/70 uppercase tracking-wide">Promoter code</label>
-              <input
-                value={subdomain}
-                onChange={(e) => setSubdomain(e.target.value)}
-                required
-                placeholder="e.g. dreamcity"
-                className="mt-1.5 w-full border border-ink/15 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
-              />
-              <p className="text-xs text-ink/40 mt-1">Given to you by your plot promoter</p>
-            </div>
-            <div>
               <label className="text-xs font-medium text-ink/70 uppercase tracking-wide">Phone number</label>
               <input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
                 placeholder="+91XXXXXXXXXX"
-                className="mt-1.5 w-full border border-ink/15 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
+                className={`${inputClass} font-mono`}
               />
             </div>
 
@@ -78,7 +68,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 transition disabled:opacity-60"
+              className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 rounded-lg transition disabled:opacity-60"
             >
               {loading ? 'Sending...' : 'Send OTP'}
             </button>
@@ -93,7 +83,7 @@ export default function Login() {
                 required
                 maxLength={6}
                 placeholder="6-digit code"
-                className="mt-1.5 w-full border border-ink/15 px-3 py-2 text-sm font-mono tracking-[0.3em] text-center focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
+                className={`${inputClass} font-mono tracking-[0.3em] text-center`}
               />
             </div>
 
@@ -102,7 +92,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 transition disabled:opacity-60"
+              className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 rounded-lg transition disabled:opacity-60"
             >
               {loading ? 'Verifying...' : 'Verify & sign in'}
             </button>

@@ -3,11 +3,6 @@ import api from '../api/client'
 
 const CustomerAuthContext = createContext(null)
 
-// Each promoter has their own subdomain (e.g. "dreamcity") — the portal is
-// typically deployed at dreamcity.plotpro.app with this baked in via env var,
-// but for local/dev use we just remember whatever the customer typed in.
-const SUBDOMAIN_KEY = 'plotpro_tenant_subdomain'
-
 export function CustomerAuthProvider({ children }) {
   const [customer, setCustomer] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -24,14 +19,12 @@ export function CustomerAuthProvider({ children }) {
       .finally(() => setLoading(false))
   }, [])
 
-  const requestOtp = async (tenantSubdomain, phone) => {
-    localStorage.setItem(SUBDOMAIN_KEY, tenantSubdomain)
-    await api.post('/customer-auth/request-otp', { tenant_subdomain: tenantSubdomain, phone })
+  const requestOtp = async (phone) => {
+    await api.post('/customer-auth/request-otp', { phone })
   }
 
-  const verifyOtp = async (tenantSubdomain, phone, otpCode) => {
+  const verifyOtp = async (phone, otpCode) => {
     const res = await api.post('/customer-auth/verify-otp', {
-      tenant_subdomain: tenantSubdomain,
       phone,
       otp_code: otpCode,
     })

@@ -40,6 +40,10 @@ class PlotCreate(BaseModel):
     google_maps_link: str | None = None
     latitude: float | None = None
     longitude: float | None = None
+    dtcp_approved: bool | None = None
+    dtcp_number: str | None = None
+    rera_approved: bool | None = None
+    rera_number: str | None = None
 
 
 class PlotUpdate(BaseModel):
@@ -53,6 +57,10 @@ class PlotUpdate(BaseModel):
     image_url: str | None = None
     latitude: float | None = None
     longitude: float | None = None
+    dtcp_approved: bool | None = None
+    dtcp_number: str | None = None
+    rera_approved: bool | None = None
+    rera_number: str | None = None
 
 
 class PlotOut(BaseModel):
@@ -76,6 +84,10 @@ class PlotOut(BaseModel):
     map_y_percent: float | None = None
     latitude: float | None = None
     longitude: float | None = None
+    dtcp_approved: bool | None = None
+    dtcp_number: str | None = None
+    rera_approved: bool | None = None
+    rera_number: str | None = None
 
     class Config:
         from_attributes = True

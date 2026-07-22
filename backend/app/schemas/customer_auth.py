@@ -3,12 +3,10 @@ from pydantic import BaseModel
 
 
 class OTPRequest(BaseModel):
-    tenant_subdomain: str
     phone: str
 
 
 class OTPVerify(BaseModel):
-    tenant_subdomain: str
     phone: str
     otp_code: str
 

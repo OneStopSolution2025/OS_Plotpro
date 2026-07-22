@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Building2, CheckCircle2, Clock, Users, ArrowRight } from 'lucide-react'
+import { Building2, CheckCircle2, Clock, Users, ArrowRight, AlertTriangle } from 'lucide-react'
 import api from '../api/client'
 import { useToast } from '../context/ToastContext'
 import { errorMessage } from '../utils/errors'
 
 function StatCard({ icon: Icon, label, value, tone = 'brand' }) {
   const toneClasses = {
-    brand: 'bg-brand-500/15 text-brand-600',
+    brand: 'bg-brand-500/15 text-brand-500',
     rust: 'bg-rust-500/15 text-rust-500',
   }
   return (
@@ -39,6 +39,7 @@ export default function PlatformDashboard() {
   const activeCount = tenants.filter((t) => t.is_active).length
   const pendingCount = tenants.filter((t) => !t.is_active).length
   const totalStaff = tenants.reduce((sum, t) => sum + t.staff_count, 0)
+  const expiringSoon = tenants.filter((t) => t.days_to_expiry != null && t.days_to_expiry <= 14)
 
   const recentTenants = [...tenants]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -59,7 +60,7 @@ export default function PlatformDashboard() {
       {pendingCount > 0 && (
         <Link
           to="/tenants"
-          className="flex items-center justify-between doc-card p-4 mb-6 border-l-4 border-rust-500 hover:border-rust-600 transition group"
+          className="flex items-center justify-between doc-card p-4 mb-3 border-l-4 border-rust-500 hover:border-rust-600 transition group"
         >
           <div className="flex items-center gap-3">
             <Clock className="text-rust-500 flex-shrink-0" size={18} />
@@ -71,11 +72,26 @@ export default function PlatformDashboard() {
         </Link>
       )}
 
+      {expiringSoon.length > 0 && (
+        <Link
+          to="/tenants"
+          className="flex items-center justify-between doc-card p-4 mb-6 border-l-4 border-brand-500 hover:border-brand-600 transition group"
+        >
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="text-brand-500 flex-shrink-0" size={18} />
+            <p className="text-sm text-ink/70">
+              <span className="font-medium text-ink">{expiringSoon.length} subscription{expiringSoon.length > 1 ? 's' : ''}</span> expiring within 14 days: {expiringSoon.map((t) => t.company_name).join(', ')}
+            </p>
+          </div>
+          <ArrowRight size={16} className="text-brand-500 group-hover:translate-x-1 transition-transform" />
+        </Link>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="doc-card p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-display font-semibold text-ink">Recently Joined</h2>
-            <Link to="/tenants" className="text-xs text-brand-600 hover:underline">View all →</Link>
+            <Link to="/tenants" className="text-xs text-brand-500 hover:underline">View all →</Link>
           </div>
           <div className="space-y-2">
             {recentTenants.map((t) => (
@@ -84,7 +100,7 @@ export default function PlatformDashboard() {
                   <p className="text-sm font-medium text-ink">{t.company_name}</p>
                   <p className="text-xs text-ink/40 font-mono">{t.subdomain}</p>
                 </div>
-                <span className={`record-tag ${t.is_active ? 'text-brand-600' : 'text-rust-500'}`}>
+                <span className={`record-tag ${t.is_active ? 'text-brand-500' : 'text-rust-500'}`}>
                   {t.is_active ? 'active' : 'pending'}
                 </span>
               </div>

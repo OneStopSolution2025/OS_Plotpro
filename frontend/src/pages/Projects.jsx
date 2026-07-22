@@ -151,6 +151,7 @@ function NewPlotForm({ projectId, presetPosition, onDone, onCreated }) {
   const [form, setForm] = useState({
     plot_number: '', extent_sqft: '', price_per_sqft: '', facing: '',
     description: '', amenities: '', patta_number: '', google_maps_link: '',
+    dtcp_status: '', dtcp_number: '', rera_status: '', rera_number: '',
   })
   const [coords, setCoords] = useState({ latitude: null, longitude: null })
   const [expanded, setExpanded] = useState(false)
@@ -173,6 +174,10 @@ function NewPlotForm({ projectId, presetPosition, onDone, onCreated }) {
         longitude: coords.longitude,
         map_x_percent: presetPosition?.x ?? null,
         map_y_percent: presetPosition?.y ?? null,
+        dtcp_approved: form.dtcp_status === '' ? null : form.dtcp_status === 'available',
+        dtcp_number: form.dtcp_status === 'available' ? (form.dtcp_number || null) : null,
+        rera_approved: form.rera_status === '' ? null : form.rera_status === 'available',
+        rera_number: form.rera_status === 'available' ? (form.rera_number || null) : null,
       })
       showToast(`Plot ${form.plot_number} added`, 'success')
       onDone?.()
@@ -238,6 +243,36 @@ function NewPlotForm({ projectId, presetPosition, onDone, onCreated }) {
                 onChange={(e) => setForm({ ...form, google_maps_link: e.target.value })}
                 className={inputClass} />
             </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-ink/70 uppercase tracking-wide block mb-1">DTCP Approval</label>
+              <select value={form.dtcp_status} onChange={(e) => setForm({ ...form, dtcp_status: e.target.value, dtcp_number: e.target.value === 'available' ? form.dtcp_number : '' })}
+                className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm bg-surface focus:border-brand-500 focus:outline-none">
+                <option value="">Not specified</option>
+                <option value="available">Available</option>
+                <option value="not_available">Not available</option>
+              </select>
+              {form.dtcp_status === 'available' && (
+                <input placeholder="DTCP approval number" value={form.dtcp_number}
+                  onChange={(e) => setForm({ ...form, dtcp_number: e.target.value })}
+                  className={`${inputClass} mt-2`} />
+              )}
+            </div>
+            <div>
+              <label className="text-xs font-medium text-ink/70 uppercase tracking-wide block mb-1">RERA Approval</label>
+              <select value={form.rera_status} onChange={(e) => setForm({ ...form, rera_status: e.target.value, rera_number: e.target.value === 'available' ? form.rera_number : '' })}
+                className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm bg-surface focus:border-brand-500 focus:outline-none">
+                <option value="">Not specified</option>
+                <option value="available">Available</option>
+                <option value="not_available">Not available</option>
+              </select>
+              {form.rera_status === 'available' && (
+                <input placeholder="RERA registration number" value={form.rera_number}
+                  onChange={(e) => setForm({ ...form, rera_number: e.target.value })}
+                  className={`${inputClass} mt-2`} />
+              )}
+            </div>
           </div>
           <LocationPicker latitude={coords.latitude} longitude={coords.longitude} onChange={setCoords} />
         </div>
@@ -431,6 +466,8 @@ function LayoutMap({ project, plots, onUpdated, onCreated, onViewDetail }) {
 function PlotDetailModal({ plotId, onClose, onUpdated, currency }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [editingLocation, setEditingLocation] = useState(false)
+  const [newCoords, setNewCoords] = useState({ latitude: null, longitude: null })
   const inputRef = useRef(null)
   const { showToast } = useToast()
 
@@ -455,6 +492,22 @@ function PlotDetailModal({ plotId, onClose, onUpdated, currency }) {
       onUpdated()
     } catch {
       showToast('Upload failed — check file type', 'error')
+    }
+  }
+
+  const saveLocation = async () => {
+    if (newCoords.latitude == null || newCoords.longitude == null) {
+      showToast('Search and select a location first', 'error')
+      return
+    }
+    try {
+      await api.patch(`/plots/${plotId}`, { latitude: newCoords.latitude, longitude: newCoords.longitude })
+      showToast('Plot location updated — now visible on the live map', 'success')
+      setEditingLocation(false)
+      load()
+      onUpdated()
+    } catch (err) {
+      showToast(errorMessage(err, 'Could not update location'), 'error')
     }
   }
 
@@ -491,11 +544,18 @@ function PlotDetailModal({ plotId, onClose, onUpdated, currency }) {
                 <div className="flex justify-between"><span className="text-ink/50 font-sans">Facing</span><span>{data.plot.facing || '-'}</span></div>
                 <div className="flex justify-between"><span className="text-ink/50 font-sans">Status</span><span className="uppercase">{data.plot.status}</span></div>
                 {data.plot.patta_number && <div className="flex justify-between"><span className="text-ink/50 font-sans">Patta No.</span><span>{data.plot.patta_number}</span></div>}
-                {data.plot.latitude != null && (
-                  <div className="flex items-center gap-1 text-brand-500 font-sans text-xs pt-1">
-                    <Navigation size={11} /> On live map
-                  </div>
-                )}
+                <div className="pt-1 font-sans">
+                  {data.plot.latitude != null ? (
+                    <p className="flex items-center gap-1 text-brand-500 text-xs">
+                      <Navigation size={11} /> On live map
+                      <button onClick={() => { setEditingLocation(true); setNewCoords({ latitude: data.plot.latitude, longitude: data.plot.longitude }) }} className="text-ink/40 hover:text-ink underline ml-1">change</button>
+                    </p>
+                  ) : (
+                    <button onClick={() => setEditingLocation(true)} className="text-xs text-brand-500 hover:underline">
+                      + Set plot location
+                    </button>
+                  )}
+                </div>
                 {data.plot.google_maps_link && (
                   <a href={data.plot.google_maps_link} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-brand-500 hover:underline font-sans text-xs pt-1">
                     <MapPin size={12} /> View on Google Maps <ExternalLink size={10} />
@@ -503,6 +563,32 @@ function PlotDetailModal({ plotId, onClose, onUpdated, currency }) {
                 )}
               </div>
             </div>
+
+            {editingLocation && (
+              <div className="mb-5 p-3 rounded-lg bg-ink/5">
+                <LocationPicker latitude={newCoords.latitude} longitude={newCoords.longitude} onChange={setNewCoords} />
+                <div className="flex gap-2 mt-2">
+                  <button onClick={saveLocation} className="bg-brand-600 hover:bg-brand-700 text-white px-3 py-1.5 rounded-lg text-xs transition">Save location</button>
+                  <button onClick={() => setEditingLocation(false)} className="text-xs text-ink/50 hover:text-ink">Cancel</button>
+                </div>
+              </div>
+            )}
+
+            {data.plot.latitude != null && (
+              <div className="mb-5">
+                <p className="text-xs uppercase tracking-wide text-ink/40 mb-1.5">Live Location — drag the pegman onto the map for street view</p>
+                <div className="rounded-lg overflow-hidden border border-ink/10" style={{ height: '220px' }}>
+                  <iframe
+                    title="Plot location"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    src={`https://maps.google.com/maps?q=${data.plot.latitude},${data.plot.longitude}&z=18&output=embed`}
+                  />
+                </div>
+              </div>
+            )}
 
             {data.plot.description && (
               <div className="mb-4">

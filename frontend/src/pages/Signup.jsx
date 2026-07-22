@@ -40,6 +40,7 @@ export default function Signup() {
     subscription_plan: 'trial',
   })
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [customizeSubdomain, setCustomizeSubdomain] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
@@ -72,7 +73,7 @@ export default function Signup() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-panel px-4">
         <div className="doc-card p-9 w-full max-w-md text-center">
-          <CheckCircle2 className="mx-auto text-brand-600 mb-4" size={40} />
+          <CheckCircle2 className="mx-auto text-brand-500 mb-4" size={40} />
           <h1 className="font-display text-2xl font-bold text-ink mb-2">Application submitted</h1>
           <p className="text-sm text-ink/60 mb-6">
             Thanks, {form.company_name}! Your promoter account is pending review by OS2 Studio.
@@ -104,19 +105,34 @@ export default function Signup() {
             <div className="space-y-3">
               <Field label="Company name" required>
                 <input value={form.company_name}
-                  onChange={(e) => setForm({ ...form, company_name: e.target.value })}
+                  onChange={(e) => {
+                    const name = e.target.value
+                    setForm((prev) => ({
+                      ...prev,
+                      company_name: name,
+                      subdomain: customizeSubdomain ? prev.subdomain : name.toLowerCase().replace(/[^a-z0-9]/g, ''),
+                    }))
+                  }}
                   placeholder="e.g. Dream City Promoters"
                   className={inputClass} />
               </Field>
               <Field
-                label="Your subdomain"
-                required
-                hint="Lowercase letters and numbers only — this is what your customers use to log into their portal."
+                label="Your account code"
+                hint="Auto-generated from your company name — just an internal identifier, customers never need to see or enter this."
               >
-                <input value={form.subdomain}
-                  onChange={(e) => setForm({ ...form, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '') })}
-                  placeholder="e.g. dreamcity"
-                  className={`${inputClass} font-mono`} />
+                {!customizeSubdomain ? (
+                  <div className="flex items-center gap-2">
+                    <span className={`${inputClass} font-mono bg-ink/5 text-ink/60`}>{form.subdomain || 'will appear as you type your company name'}</span>
+                    <button type="button" onClick={() => setCustomizeSubdomain(true)} className="text-xs text-brand-600 hover:underline whitespace-nowrap">
+                      Customize
+                    </button>
+                  </div>
+                ) : (
+                  <input value={form.subdomain}
+                    onChange={(e) => setForm({ ...form, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '') })}
+                    placeholder="e.g. dreamcity"
+                    className={`${inputClass} font-mono`} />
+                )}
                 {form.subdomain && !subdomainValid && (
                   <p className="text-xs text-rust-500 mt-1">Only lowercase letters and numbers allowed.</p>
                 )}
@@ -189,7 +205,7 @@ export default function Signup() {
                   onClick={() => setForm({ ...form, subscription_plan: p.value })}
                   className={`text-left p-3 rounded-lg border transition ${
                     form.subscription_plan === p.value
-                      ? 'border-brand-500 bg-brand-500/15'
+                      ? 'border-brand-500 bg-brand-50'
                       : 'border-ink/15 hover:border-ink/30'
                   }`}
                 >

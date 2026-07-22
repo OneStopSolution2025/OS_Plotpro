@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -8,6 +9,7 @@ from app.core.database import get_db
 from app.core.security import hash_password
 from app.core.deps import require_roles
 from app.models.tenant import Tenant, SubscriptionPlan
+from app.models.tenant_plan_history import TenantPlanHistory
 from app.models.user import User, UserRole
 from app.models.plot import Plot
 from app.models.booking import Booking
@@ -46,15 +48,14 @@ async def signup_tenant(
     """Public self-registration — no login required. A prospective promoter
     fills this in themselves (company details + their own admin credentials),
     lands in 'pending' status, and can't log in until OS2's Supreme Admin
-    reviews and approves them from All Promoters. Same pattern as WashPro's
-    self-registration + SuperAdmin approval flow."""
+    reviews and approves them from All Promoters."""
     return await _create_tenant_and_admin(payload, db)
 
 
 async def _create_tenant_and_admin(payload: "TenantOnboard", db: AsyncSession):
     existing = await db.execute(select(Tenant).where(Tenant.subdomain == payload.subdomain))
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Subdomain already taken")
+        raise HTTPException(status_code=400, detail="This account code is already taken — try a different company name or customize it.")
 
     existing_email = await db.execute(select(User).where(User.email == payload.contact_email))
     if existing_email.scalar_one_or_none():
@@ -99,11 +100,18 @@ async def platform_overview(
         plot_count = len((await db.execute(select(Plot).where(Plot.tenant_id == t.id))).scalars().all())
         booking_count = len((await db.execute(select(Booking).where(Booking.tenant_id == t.id))).scalars().all())
         staff_count = len((await db.execute(select(User).where(User.tenant_id == t.id))).scalars().all())
+
+        days_to_expiry = None
+        if t.subscription_expires_at:
+            days_to_expiry = (t.subscription_expires_at - date.today()).days
+
         overview.append({
             "id": str(t.id),
             "company_name": t.company_name,
             "subdomain": t.subdomain,
             "subscription_plan": t.subscription_plan,
+            "subscription_expires_at": t.subscription_expires_at,
+            "days_to_expiry": days_to_expiry,
             "is_active": t.is_active,
             "plot_count": plot_count,
             "booking_count": booking_count,
@@ -137,6 +145,7 @@ class TenantUpdate(BaseModel):
     country: str | None = None
     currency: str | None = None
     subscription_plan: SubscriptionPlan | None = None
+    subscription_expires_at: date | None = None
 
 
 @router.patch("/{tenant_id}")
@@ -144,16 +153,62 @@ async def update_tenant(
     tenant_id: uuid.UUID,
     payload: TenantUpdate,
     db: AsyncSession = Depends(get_db),
-    _admin: User = Depends(require_roles(UserRole.PLATFORM_ADMIN)),
+    admin: User = Depends(require_roles(UserRole.PLATFORM_ADMIN)),
 ):
     result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
     tenant = result.scalar_one_or_none()
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
-    for field, value in payload.model_dump(exclude_unset=True).items():
+
+    updates = payload.model_dump(exclude_unset=True)
+
+    # Auto-log any plan or expiry change so there's always a clear history
+    # of what was changed and by whom, without the admin having to
+    # remember to note it anywhere separately.
+    plan_changed = "subscription_plan" in updates and updates["subscription_plan"] != tenant.subscription_plan
+    expiry_changed = "subscription_expires_at" in updates and updates["subscription_expires_at"] != tenant.subscription_expires_at
+    if plan_changed or expiry_changed:
+        history = TenantPlanHistory(
+            tenant_id=tenant.id,
+            old_plan=tenant.subscription_plan.value if tenant.subscription_plan else None,
+            new_plan=updates.get("subscription_plan", tenant.subscription_plan).value if updates.get("subscription_plan", tenant.subscription_plan) else None,
+            old_expires_at=tenant.subscription_expires_at,
+            new_expires_at=updates.get("subscription_expires_at", tenant.subscription_expires_at),
+            changed_by_email=admin.email,
+        )
+        db.add(history)
+
+    for field, value in updates.items():
         setattr(tenant, field, value)
+
     await db.commit()
     return {"status": "updated"}
+
+
+@router.get("/{tenant_id}/plan-history")
+async def get_plan_history(
+    tenant_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(require_roles(UserRole.PLATFORM_ADMIN)),
+):
+    result = await db.execute(
+        select(TenantPlanHistory)
+        .where(TenantPlanHistory.tenant_id == tenant_id)
+        .order_by(TenantPlanHistory.created_at.desc())
+    )
+    history = result.scalars().all()
+    return [
+        {
+            "id": str(h.id),
+            "old_plan": h.old_plan,
+            "new_plan": h.new_plan,
+            "old_expires_at": h.old_expires_at,
+            "new_expires_at": h.new_expires_at,
+            "changed_by_email": h.changed_by_email,
+            "changed_at": h.created_at,
+        }
+        for h in history
+    ]
 
 
 @router.delete("/{tenant_id}")

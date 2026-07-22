@@ -21,28 +21,28 @@ router = APIRouter(prefix="/api/customer-auth", tags=["customer portal"])
 OTP_VALID_MINUTES = 5
 
 
-async def _get_tenant_by_subdomain(db: AsyncSession, subdomain: str) -> Tenant:
-    result = await db.execute(select(Tenant).where(Tenant.subdomain == subdomain))
-    tenant = result.scalar_one_or_none()
-    if not tenant:
-        raise HTTPException(status_code=404, detail="Unknown promoter")
-    return tenant
-
-
 @router.post("/request-otp")
 async def request_otp(payload: OTPRequest, db: AsyncSession = Depends(get_db)):
-    tenant = await _get_tenant_by_subdomain(db, payload.tenant_subdomain)
+    """Phone-only login — no promoter code needed. Looks up which
+    promoter(s) this phone belongs to directly, since customers shouldn't
+    need to know or remember an internal subdomain value."""
+    result = await db.execute(select(Customer).where(Customer.phone == payload.phone))
+    matches = result.scalars().all()
 
-    result = await db.execute(
-        select(Customer).where(Customer.tenant_id == tenant.id, Customer.phone == payload.phone)
-    )
-    customer = result.scalar_one_or_none()
-    if not customer:
-        raise HTTPException(status_code=404, detail="No account found for this phone number with this promoter")
+    if not matches:
+        raise HTTPException(status_code=404, detail="No account found for this phone number. Please contact your promoter.")
+    if len(matches) > 1:
+        # Same phone registered under more than one promoter — rare, but
+        # handle it explicitly rather than guessing which one they mean.
+        raise HTTPException(
+            status_code=400,
+            detail="This phone number is linked to more than one promoter account. Please contact support for help logging in.",
+        )
 
+    customer = matches[0]
     otp_code = f"{random.randint(100000, 999999)}"
     otp = CustomerOTP(
-        tenant_id=tenant.id,
+        tenant_id=customer.tenant_id,
         customer_id=customer.id,
         phone=payload.phone,
         otp_code=otp_code,
@@ -57,12 +57,9 @@ async def request_otp(payload: OTPRequest, db: AsyncSession = Depends(get_db)):
 
 @router.post("/verify-otp", response_model=CustomerToken)
 async def verify_otp(payload: OTPVerify, db: AsyncSession = Depends(get_db)):
-    tenant = await _get_tenant_by_subdomain(db, payload.tenant_subdomain)
-
     result = await db.execute(
         select(CustomerOTP)
         .where(
-            CustomerOTP.tenant_id == tenant.id,
             CustomerOTP.phone == payload.phone,
             CustomerOTP.otp_code == payload.otp_code,
             CustomerOTP.is_used == False,  # noqa: E712
@@ -78,7 +75,7 @@ async def verify_otp(payload: OTPVerify, db: AsyncSession = Depends(get_db)):
     otp.is_used = True
     await db.commit()
 
-    token = create_access_token({"sub": str(otp.customer_id), "type": "customer", "tenant_id": str(tenant.id)})
+    token = create_access_token({"sub": str(otp.customer_id), "type": "customer", "tenant_id": str(otp.tenant_id)})
     return CustomerToken(access_token=token, customer_id=otp.customer_id)
 
 
@@ -128,8 +125,8 @@ async def booking_detail(
     customer: Customer = Depends(get_current_customer),
     db: AsyncSession = Depends(get_db),
 ):
-    """Full detail for the sale agreement view — booking, plot, project,
-    and customer info in one call."""
+    """Full detail for the sale agreement view and the plot's live map —
+    booking, plot (including GPS coordinates), project, and customer info."""
     from app.models.plot import Plot, Project
 
     booking_result = await db.execute(
@@ -159,6 +156,9 @@ async def booking_detail(
             "extent_sqft": plot.extent_sqft if plot else None,
             "facing": plot.facing if plot else None,
             "patta_number": plot.patta_number if plot else None,
+            # Needed so the customer portal can render the live map / street view
+            "latitude": plot.latitude if plot else None,
+            "longitude": plot.longitude if plot else None,
         } if plot else None,
         "project": {
             "name": project.name if project else None,
