@@ -24,37 +24,37 @@ export default function Receipt() {
     })
   }, [bookingId])
 
-  if (!data) return <div className="p-6 text-ink/50 text-sm">Loading receipt...</div>
+  if (!data) return <div className="p-6 text-neutral-500 text-sm">Loading receipt...</div>
 
   const totalPaid = data.payments.reduce((sum, p) => sum + p.amount, 0)
 
   return (
     <div className="bg-white min-h-screen">
-      <div className="print:hidden p-4 bg-parchment border-b border-ink/10 flex items-center justify-between">
+      <div className="print:hidden p-4 bg-neutral-100 border-b border-neutral-200 flex items-center justify-between">
         <Link to={`/ledger/${bookingId}`} className="text-sm text-brand-600 hover:underline">← Back</Link>
         <button onClick={() => window.print()} className="bg-brand-600 text-white px-4 py-2 text-sm">
           Print / Save as PDF
         </button>
       </div>
 
-      <div className="max-w-2xl mx-auto p-10 font-sans text-ink">
-        <div className="flex items-center justify-between border-b-2 border-ink pb-4 mb-6">
+      <div className="max-w-2xl mx-auto p-10 font-sans text-neutral-900">
+        <div className="flex items-center justify-between border-b-2 border-neutral-900 pb-4 mb-6">
           <div>
             <h1 className="font-display text-2xl font-semibold">Payment Receipt</h1>
-            <p className="text-xs text-ink/50 font-mono mt-1">Booking #{bookingId.slice(0, 8)}</p>
+            <p className="text-xs text-neutral-500 font-mono mt-1">Booking #{bookingId.slice(0, 8)}</p>
           </div>
-          <p className="text-xs text-ink/50 font-mono">{new Date().toLocaleDateString('en-IN')}</p>
+          <p className="text-xs text-neutral-500 font-mono">{new Date().toLocaleDateString('en-IN')}</p>
         </div>
 
         <div className="mb-6">
-          <p className="text-xs uppercase tracking-wide text-ink/40 mb-1">Billed to</p>
+          <p className="text-xs uppercase tracking-wide text-neutral-400 mb-1">Billed to</p>
           <p className="font-medium">{customer?.full_name}</p>
-          <p className="text-sm text-ink/60 font-mono">{customer?.phone}</p>
+          <p className="text-sm text-neutral-600 font-mono">{customer?.phone}</p>
         </div>
 
-        <table className="w-full text-sm mb-6 border-t border-ink/15">
+        <table className="w-full text-sm mb-6 border-t border-neutral-200">
           <thead>
-            <tr className="border-b border-ink/15 text-left text-xs uppercase tracking-wide text-ink/50">
+            <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
               <th className="py-2">Receipt No.</th>
               <th className="py-2">Mode</th>
               <th className="py-2 text-right">Amount</th>
@@ -62,9 +62,9 @@ export default function Receipt() {
           </thead>
           <tbody className="font-mono">
             {data.payments.map((p, i) => (
-              <tr key={i} className="border-b border-ink/10">
+              <tr key={i} className="border-b border-neutral-200">
                 <td className="py-2">{p.receipt_number}</td>
-                <td className="py-2 text-ink/60">{p.mode}</td>
+                <td className="py-2 text-neutral-600">{p.mode}</td>
                 <td className="py-2 text-right">{formatMoney(p.amount, customer?.tenant_currency)}</td>
               </tr>
             ))}
@@ -74,13 +74,13 @@ export default function Receipt() {
         <div className="flex justify-end">
           <div className="w-56">
             <div className="flex justify-between text-sm font-mono py-1">
-              <span className="text-ink/60">Total Paid</span>
+              <span className="text-neutral-600">Total Paid</span>
               <span className="font-medium">{formatMoney(totalPaid, customer?.tenant_currency)}</span>
             </div>
           </div>
         </div>
 
-        <p className="text-xs text-ink/40 mt-10 pt-4 border-t border-ink/10">
+        <p className="text-xs text-neutral-400 mt-10 pt-4 border-t border-neutral-200">
           This is a system-generated receipt from OS2 PlotPro on behalf of your promoter.
         </p>
       </div>
