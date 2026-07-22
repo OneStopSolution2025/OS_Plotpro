@@ -70,7 +70,7 @@ export default function Signup() {
 
   if (done) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-ink px-4">
+      <div className="min-h-screen flex items-center justify-center bg-panel px-4">
         <div className="doc-card p-9 w-full max-w-md text-center">
           <CheckCircle2 className="mx-auto text-brand-600 mb-4" size={40} />
           <h1 className="font-display text-2xl font-bold text-ink mb-2">Application submitted</h1>
@@ -86,7 +86,7 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-ink px-4 py-10">
+    <div className="min-h-screen flex items-center justify-center bg-panel px-4 py-10">
       <div className="doc-card p-6 sm:p-9 w-full max-w-xl">
         <div className="w-10 h-10 bg-brand-600 rounded-lg flex items-center justify-center font-display font-bold text-white text-lg mb-4">P</div>
         <p className="text-xs uppercase tracking-widest text-brand-600 font-medium mb-1">Become a Promoter</p>
@@ -189,7 +189,7 @@ export default function Signup() {
                   onClick={() => setForm({ ...form, subscription_plan: p.value })}
                   className={`text-left p-3 rounded-lg border transition ${
                     form.subscription_plan === p.value
-                      ? 'border-brand-500 bg-brand-50'
+                      ? 'border-brand-500 bg-brand-500/15'
                       : 'border-ink/15 hover:border-ink/30'
                   }`}
                 >

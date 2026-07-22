@@ -7,8 +7,8 @@ import { errorMessage } from '../utils/errors'
 
 function StatCard({ icon: Icon, label, value, tone = 'brand' }) {
   const toneClasses = {
-    brand: 'bg-brand-50 text-brand-600',
-    rust: 'bg-rust-50 text-rust-500',
+    brand: 'bg-brand-500/15 text-brand-600',
+    rust: 'bg-rust-500/15 text-rust-500',
   }
   return (
     <div className="doc-card p-5 flex items-center gap-4">

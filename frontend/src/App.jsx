@@ -29,7 +29,7 @@ function AdminLayout({ children }) {
       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <div className="flex-1 min-w-0">
         {/* Mobile top bar — hidden on desktop, gives access to the sidebar drawer */}
-        <div className="lg:hidden flex items-center gap-3 p-4 border-b border-ink/10 bg-white sticky top-0 z-20">
+        <div className="lg:hidden flex items-center gap-3 p-4 border-b border-ink/10 bg-surface sticky top-0 z-20">
           <button onClick={() => setMobileOpen(true)} className="text-ink">
             <Menu size={22} />
           </button>

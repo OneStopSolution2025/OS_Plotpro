@@ -4,31 +4,28 @@
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #F7F7F5;
-  color: #0D0D0D;
+  background-color: #171310;
+  color: #F2ECE2;
 }
 
-/* Standard card — clean rounded corners + subtle shadow, replacing the
-   earlier "stamped document" motif with a conventional modern SaaS card. */
+/* Card — sits one elevation level above the page background (surface),
+   with a subtle light border since everything is dark by default now. */
 .doc-card {
-  background: #fff;
-  border: 1px solid rgba(13,13,13,0.08);
+  background: #221C17;
+  border: 1px solid rgba(242,236,226,0.08);
   border-radius: 0.75rem;
-  box-shadow: 0 1px 2px rgba(13,13,13,0.04);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
-/* Standard status pill */
 .record-tag {
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   padding: 0.2rem 0.6rem;
   border-radius: 9999px;
-  background: rgba(13,13,13,0.06);
+  background: rgba(242,236,226,0.08);
 }
 
-/* Responsive helper: horizontal scroll wrapper for wide tables on
-   tablet/mobile instead of squeezing columns unreadably. */
 .table-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;

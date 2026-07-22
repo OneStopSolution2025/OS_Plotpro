@@ -32,7 +32,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
       )}
 
       <div
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-ink h-screen flex flex-col border-r border-black/20 transition-transform duration-200 ${
+        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-panel h-screen flex flex-col border-r border-black/20 transition-transform duration-200 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >

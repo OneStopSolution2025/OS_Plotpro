@@ -41,7 +41,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-ink grid-paper px-4">
+    <div className="min-h-screen flex items-center justify-center bg-panel px-4">
       <div className="doc-card p-9 w-full max-w-sm shadow-xl">
         <p className="font-mono text-[11px] tracking-widest uppercase text-brass-600 mb-1">Customer Portal</p>
         <h1 className="font-display text-3xl font-semibold text-ink mb-1">My Plot</h1>

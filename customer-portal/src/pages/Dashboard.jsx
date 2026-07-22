@@ -67,7 +67,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="doc-card p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-brand-500/15 text-brand-600 flex items-center justify-center flex-shrink-0">
             <TrendingUp size={18} />
           </div>
           <div>

@@ -22,10 +22,10 @@ export function ToastProvider({ children }) {
             key={t.id}
             className={`px-4 py-2.5 text-sm font-medium shadow-lg border-l-4 max-w-sm ${
               t.type === 'error'
-                ? 'bg-white text-rust-600 border-rust-500'
+                ? 'bg-surface text-rust-400 border-rust-500'
                 : t.type === 'success'
-                ? 'bg-white text-brand-700 border-brand-600'
-                : 'bg-white text-ink border-ink/30'
+                ? 'bg-surface text-brand-500 border-brand-600'
+                : 'bg-surface text-ink border-ink/20'
             }`}
           >
             {t.message}

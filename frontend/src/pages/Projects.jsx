@@ -11,7 +11,7 @@ const STATUS_COLORS = {
   available: 'bg-brand-600',
   hold: 'bg-brass-500',
   booked: 'bg-rust-500',
-  sold: 'bg-ink',
+  sold: 'bg-panel',
   registered: 'bg-ink/50',
 }
 
@@ -655,7 +655,7 @@ export default function Projects() {
                 <div
                   key={p.id}
                   className={`w-full text-left p-3 rounded-lg border transition ${
-                    selectedProject?.id === p.id ? 'border-brand-600 bg-brand-50' : 'border-ink/10 bg-white hover:border-ink/25'
+                    selectedProject?.id === p.id ? 'border-brand-600 bg-brand-500/10' : 'border-ink/10 bg-surface hover:border-ink/25'
                   }`}
                 >
                   <button onClick={() => setSelectedProject(p)} className="w-full text-left">
@@ -686,17 +686,17 @@ export default function Projects() {
                 <div className="flex items-center gap-3">
                   <div className="flex text-xs font-mono border border-ink/15 rounded-lg overflow-hidden">
                     <button onClick={() => setView('grid')}
-                      className={`px-2 py-1 flex items-center gap-1 transition ${view === 'grid' ? 'bg-ink text-white' : 'text-ink/60 hover:bg-ink/5'}`}>
+                      className={`px-2 py-1 flex items-center gap-1 transition ${view === 'grid' ? 'bg-panel text-white' : 'text-ink/60 hover:bg-ink/5'}`}>
                       <Grid3x3 size={12} /> grid
                     </button>
                     {selectedProject.layout_image_url && (
                       <button onClick={() => setView('map')}
-                        className={`px-2 py-1 flex items-center gap-1 transition ${view === 'map' ? 'bg-ink text-white' : 'text-ink/60 hover:bg-ink/5'}`}>
+                        className={`px-2 py-1 flex items-center gap-1 transition ${view === 'map' ? 'bg-panel text-white' : 'text-ink/60 hover:bg-ink/5'}`}>
                         <MapIcon size={12} /> layout
                       </button>
                     )}
                     <button onClick={() => setView('live')}
-                      className={`px-2 py-1 flex items-center gap-1 transition ${view === 'live' ? 'bg-ink text-white' : 'text-ink/60 hover:bg-ink/5'}`}>
+                      className={`px-2 py-1 flex items-center gap-1 transition ${view === 'live' ? 'bg-panel text-white' : 'text-ink/60 hover:bg-ink/5'}`}>
                       <Navigation size={12} /> live map
                     </button>
                   </div>

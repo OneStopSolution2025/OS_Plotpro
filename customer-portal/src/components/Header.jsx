@@ -19,7 +19,7 @@ export default function Header() {
   )
 
   return (
-    <header className="bg-ink px-4 sm:px-6 py-4 print:hidden relative z-20">
+    <header className="bg-panel px-4 sm:px-6 py-4 print:hidden relative z-20">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-6">
           <Link to="/" className="flex items-center gap-2">

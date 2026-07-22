@@ -26,7 +26,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-ink grid-paper">
+    <div className="min-h-screen flex items-center justify-center bg-panel">
       <div className="doc-card p-9 w-full max-w-sm shadow-xl">
         <div className="w-10 h-10 bg-brand-600 flex items-center justify-center font-display font-bold text-white text-lg mb-4">P</div>
         <p className="font-mono text-[11px] tracking-widest uppercase text-brass-600 mb-1">Admin Access</p>

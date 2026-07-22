@@ -11,7 +11,7 @@ import { useAuth } from '../context/AuthContext'
 function StatCard({ icon: Icon, label, value, sub }) {
   return (
     <div className="doc-card p-5 flex items-center gap-4">
-      <div className="w-11 h-11 rounded-lg bg-brand-50 flex items-center justify-center text-brand-600 flex-shrink-0">
+      <div className="w-11 h-11 rounded-lg bg-brand-500/15 flex items-center justify-center text-brand-600 flex-shrink-0">
         <Icon size={20} />
       </div>
       <div>
@@ -26,7 +26,7 @@ function StatCard({ icon: Icon, label, value, sub }) {
 function QuickAction({ to, icon: Icon, label }) {
   return (
     <Link to={to} className="flex items-center gap-2 doc-card px-4 py-3 hover:border-brand-400 transition text-sm font-medium text-ink">
-      <div className="w-7 h-7 rounded-md bg-brand-50 text-brand-600 flex items-center justify-center">
+      <div className="w-7 h-7 rounded-md bg-brand-500/15 text-brand-600 flex items-center justify-center">
         <Icon size={14} />
       </div>
       {label}
@@ -137,7 +137,7 @@ export default function Dashboard() {
                 {recentActivity.map((a, i) => (
                   <div key={i} className="flex items-center gap-3 py-1.5 border-b border-ink/5 last:border-0">
                     <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${
-                      a.type === 'booking' ? 'bg-brand-50 text-brand-600' : 'bg-ink/5 text-ink/50'
+                      a.type === 'booking' ? 'bg-brand-500/15 text-brand-600' : 'bg-ink/5 text-ink/50'
                     }`}>
                       {a.type === 'booking' ? <FileSignature size={13} /> : <Phone size={13} />}
                     </div>
