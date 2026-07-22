@@ -6,6 +6,7 @@ import { errorMessage } from '../utils/errors'
 import { formatMoney } from '../utils/currency'
 import { useAuth } from '../context/AuthContext'
 import LiveMapView from './LiveMapView'
+import LocationPicker from '../components/LocationPicker'
 
 const STATUS_COLORS = {
   available: 'bg-brand-600',
@@ -15,20 +16,37 @@ const STATUS_COLORS = {
   registered: 'bg-ink/50',
 }
 
+const FACING_OPTIONS = ['East', 'West', 'North', 'South', 'North-East', 'North-West', 'South-East', 'South-West', 'Road facing']
+
+// Shared label wrapper so every field is properly labeled (not just a
+// placeholder that disappears once you start typing) with a clear
+// required-field marker where it matters.
+function Field({ label, required, children, hint }) {
+  return (
+    <div>
+      <label className="text-xs font-medium text-ink/70 uppercase tracking-wide block mb-1">
+        {label}{required && <span className="text-rust-500 ml-0.5">*</span>}
+      </label>
+      {children}
+      {hint && <p className="text-xs text-ink/40 mt-1">{hint}</p>}
+    </div>
+  )
+}
+
+const inputClass = "w-full border border-ink/15 rounded-lg px-3 py-2 text-sm bg-transparent focus:border-brand-500 focus:outline-none transition"
+
 function NewProjectForm({ onCreated }) {
-  const [form, setForm] = useState({ name: '', location: '', survey_number: '', description: '', latitude: '', longitude: '' })
+  const [form, setForm] = useState({ name: '', location: '', survey_number: '', description: '' })
+  const [coords, setCoords] = useState({ latitude: null, longitude: null })
   const [open, setOpen] = useState(false)
   const { showToast } = useToast()
 
   const submit = async (e) => {
     e.preventDefault()
     try {
-      await api.post('/plots/projects', {
-        ...form,
-        latitude: form.latitude ? parseFloat(form.latitude) : null,
-        longitude: form.longitude ? parseFloat(form.longitude) : null,
-      })
-      setForm({ name: '', location: '', survey_number: '', description: '', latitude: '', longitude: '' })
+      await api.post('/plots/projects', { ...form, ...coords })
+      setForm({ name: '', location: '', survey_number: '', description: '' })
+      setCoords({ latitude: null, longitude: null })
       setOpen(false)
       showToast(`Project "${form.name}" created`, 'success')
       onCreated()
@@ -39,35 +57,36 @@ function NewProjectForm({ onCreated }) {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 text-sm text-brand-700 font-medium hover:underline">
+      <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 text-sm text-brand-500 font-medium hover:underline">
         <Plus size={15} /> New project
       </button>
     )
   }
 
   return (
-    <form onSubmit={submit} className="doc-card p-4 space-y-2 mb-4">
-      <input placeholder="Project name" required value={form.name}
-        onChange={(e) => setForm({ ...form, name: e.target.value })}
-        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm transition focus:border-brand-500 focus:outline-none" />
-      <input placeholder="Location" value={form.location}
-        onChange={(e) => setForm({ ...form, location: e.target.value })}
-        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm transition focus:border-brand-500 focus:outline-none" />
-      <input placeholder="Survey number" value={form.survey_number}
-        onChange={(e) => setForm({ ...form, survey_number: e.target.value })}
-        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm transition focus:border-brand-500 focus:outline-none" />
-      <textarea placeholder="Short description (shown to customers)" value={form.description} rows={2}
-        onChange={(e) => setForm({ ...form, description: e.target.value })}
-        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm transition focus:border-brand-500 focus:outline-none" />
-      <div className="grid grid-cols-2 gap-2">
-        <input placeholder="Latitude (for live map)" type="number" step="any" value={form.latitude}
-          onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-          className="border border-ink/15 rounded-lg px-3 py-2 text-sm font-mono focus:border-brand-500 focus:outline-none" />
-        <input placeholder="Longitude" type="number" step="any" value={form.longitude}
-          onChange={(e) => setForm({ ...form, longitude: e.target.value })}
-          className="border border-ink/15 rounded-lg px-3 py-2 text-sm font-mono focus:border-brand-500 focus:outline-none" />
-      </div>
-      <div className="flex gap-2">
+    <form onSubmit={submit} className="doc-card p-4 space-y-3 mb-4">
+      <Field label="Project name" required>
+        <input required value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          className={inputClass} />
+      </Field>
+      <Field label="Location (short label)" hint="e.g. 'Vedapatti' — a quick reference name, not the full address">
+        <input value={form.location}
+          onChange={(e) => setForm({ ...form, location: e.target.value })}
+          className={inputClass} />
+      </Field>
+      <Field label="Survey number">
+        <input value={form.survey_number}
+          onChange={(e) => setForm({ ...form, survey_number: e.target.value })}
+          className={inputClass} />
+      </Field>
+      <Field label="Description" hint="Shown to customers in the portal">
+        <textarea value={form.description} rows={2}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          className={inputClass} />
+      </Field>
+      <LocationPicker latitude={coords.latitude} longitude={coords.longitude} onChange={setCoords} />
+      <div className="flex gap-2 pt-1">
         <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 rounded-lg text-sm transition">Create</button>
         <button type="button" onClick={() => setOpen(false)} className="text-sm text-ink/50 hover:text-ink">Cancel</button>
       </div>
@@ -79,18 +98,14 @@ function EditProjectForm({ project, onDone, onUpdated }) {
   const [form, setForm] = useState({
     name: project.name, location: project.location || '', survey_number: project.survey_number || '',
     dtcp_approval_no: project.dtcp_approval_no || '', rera_reg_no: project.rera_reg_no || '', description: project.description || '',
-    latitude: project.latitude ?? '', longitude: project.longitude ?? '',
   })
+  const [coords, setCoords] = useState({ latitude: project.latitude ?? null, longitude: project.longitude ?? null })
   const { showToast } = useToast()
 
   const submit = async (e) => {
     e.preventDefault()
     try {
-      await api.patch(`/plots/projects/${project.id}`, {
-        ...form,
-        latitude: form.latitude === '' ? null : parseFloat(form.latitude),
-        longitude: form.longitude === '' ? null : parseFloat(form.longitude),
-      })
+      await api.patch(`/plots/projects/${project.id}`, { ...form, ...coords })
       showToast('Project updated', 'success')
       onDone()
       onUpdated()
@@ -100,35 +115,28 @@ function EditProjectForm({ project, onDone, onUpdated }) {
   }
 
   return (
-    <form onSubmit={submit} className="doc-card p-4 space-y-2 mb-4">
+    <form onSubmit={submit} className="doc-card p-4 space-y-3 mb-4">
       <p className="font-display font-semibold text-ink mb-1">Edit {project.name}</p>
-      <input placeholder="Project name" value={form.name}
-        onChange={(e) => setForm({ ...form, name: e.target.value })}
-        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
-      <input placeholder="Location" value={form.location}
-        onChange={(e) => setForm({ ...form, location: e.target.value })}
-        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
-      <input placeholder="Survey number" value={form.survey_number}
-        onChange={(e) => setForm({ ...form, survey_number: e.target.value })}
-        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
-      <input placeholder="DTCP approval no." value={form.dtcp_approval_no}
-        onChange={(e) => setForm({ ...form, dtcp_approval_no: e.target.value })}
-        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
-      <input placeholder="RERA registration no." value={form.rera_reg_no}
-        onChange={(e) => setForm({ ...form, rera_reg_no: e.target.value })}
-        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
-      <textarea placeholder="Description" value={form.description} rows={2}
-        onChange={(e) => setForm({ ...form, description: e.target.value })}
-        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
-      <div className="grid grid-cols-2 gap-2">
-        <input placeholder="Latitude" type="number" step="any" value={form.latitude}
-          onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-          className="border border-ink/15 rounded-lg px-3 py-2 text-sm font-mono focus:border-brand-500 focus:outline-none" />
-        <input placeholder="Longitude" type="number" step="any" value={form.longitude}
-          onChange={(e) => setForm({ ...form, longitude: e.target.value })}
-          className="border border-ink/15 rounded-lg px-3 py-2 text-sm font-mono focus:border-brand-500 focus:outline-none" />
-      </div>
-      <div className="flex gap-2">
+      <Field label="Project name">
+        <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
+      </Field>
+      <Field label="Location">
+        <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className={inputClass} />
+      </Field>
+      <Field label="Survey number">
+        <input value={form.survey_number} onChange={(e) => setForm({ ...form, survey_number: e.target.value })} className={inputClass} />
+      </Field>
+      <Field label="DTCP approval no.">
+        <input value={form.dtcp_approval_no} onChange={(e) => setForm({ ...form, dtcp_approval_no: e.target.value })} className={inputClass} />
+      </Field>
+      <Field label="RERA registration no.">
+        <input value={form.rera_reg_no} onChange={(e) => setForm({ ...form, rera_reg_no: e.target.value })} className={inputClass} />
+      </Field>
+      <Field label="Description">
+        <textarea value={form.description} rows={2} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputClass} />
+      </Field>
+      <LocationPicker latitude={coords.latitude} longitude={coords.longitude} onChange={setCoords} />
+      <div className="flex gap-2 pt-1">
         <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 rounded-lg text-sm transition">Save changes</button>
         <button type="button" onClick={onDone} className="text-sm text-ink/50 hover:text-ink">Cancel</button>
       </div>
@@ -136,16 +144,15 @@ function EditProjectForm({ project, onDone, onUpdated }) {
   )
 }
 
-// Plot form used both for the classic grid flow (no position) and the
-// layout-image-click flow (pre-filled x/y percent). GPS latitude/longitude
-// are always optional, separate fields, entered manually or looked up from
-// Google Maps by the promoter.
+// Plot form — the one that was hardest for staff to use. Now: proper
+// labels throughout, a real Facing dropdown instead of free text, address
+// search instead of raw GPS numbers, and required fields clearly marked.
 function NewPlotForm({ projectId, presetPosition, onDone, onCreated }) {
   const [form, setForm] = useState({
     plot_number: '', extent_sqft: '', price_per_sqft: '', facing: '',
     description: '', amenities: '', patta_number: '', google_maps_link: '',
-    latitude: '', longitude: '',
   })
+  const [coords, setCoords] = useState({ latitude: null, longitude: null })
   const [expanded, setExpanded] = useState(false)
   const { showToast } = useToast()
 
@@ -162,8 +169,8 @@ function NewPlotForm({ projectId, presetPosition, onDone, onCreated }) {
         amenities: form.amenities || null,
         patta_number: form.patta_number || null,
         google_maps_link: form.google_maps_link || null,
-        latitude: form.latitude ? parseFloat(form.latitude) : null,
-        longitude: form.longitude ? parseFloat(form.longitude) : null,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
         map_x_percent: presetPosition?.x ?? null,
         map_y_percent: presetPosition?.y ?? null,
       })
@@ -176,49 +183,68 @@ function NewPlotForm({ projectId, presetPosition, onDone, onCreated }) {
   }
 
   return (
-    <form onSubmit={submit} className="doc-card p-4 grid grid-cols-2 gap-2">
-      <input placeholder="Plot no." required autoFocus value={form.plot_number}
-        onChange={(e) => setForm({ ...form, plot_number: e.target.value })}
-        className="border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
-      <input placeholder="Facing" value={form.facing}
-        onChange={(e) => setForm({ ...form, facing: e.target.value })}
-        className="border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
-      <input placeholder="Extent (sqft)" type="number" required value={form.extent_sqft}
-        onChange={(e) => setForm({ ...form, extent_sqft: e.target.value })}
-        className="border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
-      <input placeholder="Price/sqft" type="number" required value={form.price_per_sqft}
-        onChange={(e) => setForm({ ...form, price_per_sqft: e.target.value })}
-        className="border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+    <form onSubmit={submit} className="doc-card p-4 space-y-3">
+      <p className="font-display font-semibold text-ink text-sm">Add Plot</p>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Plot number" required>
+          <input required autoFocus value={form.plot_number}
+            onChange={(e) => setForm({ ...form, plot_number: e.target.value })}
+            className={inputClass} />
+        </Field>
+        <Field label="Facing">
+          <select value={form.facing} onChange={(e) => setForm({ ...form, facing: e.target.value })}
+            className={`${inputClass} bg-surface`}>
+            <option value="">Select facing</option>
+            {FACING_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
+          </select>
+        </Field>
+        <Field label="Extent" required hint="in square feet">
+          <input type="number" required value={form.extent_sqft}
+            onChange={(e) => setForm({ ...form, extent_sqft: e.target.value })}
+            className={inputClass} />
+        </Field>
+        <Field label="Price per sqft" required>
+          <input type="number" required value={form.price_per_sqft}
+            onChange={(e) => setForm({ ...form, price_per_sqft: e.target.value })}
+            className={inputClass} />
+        </Field>
+      </div>
 
       {!expanded ? (
-        <button type="button" onClick={() => setExpanded(true)} className="col-span-2 text-xs text-brand-700 hover:underline text-left">
-          + Add more details (description, amenities, patta no., GPS location)
+        <button type="button" onClick={() => setExpanded(true)} className="text-xs text-brand-500 hover:underline text-left block">
+          + Add more details (description, amenities, patta no., location)
         </button>
       ) : (
-        <>
-          <textarea placeholder="Description" value={form.description} rows={2}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="col-span-2 border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
-          <input placeholder="Amenities (comma separated)" value={form.amenities}
-            onChange={(e) => setForm({ ...form, amenities: e.target.value })}
-            className="col-span-2 border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
-          <input placeholder="Patta number" value={form.patta_number}
-            onChange={(e) => setForm({ ...form, patta_number: e.target.value })}
-            className="border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
-          <input placeholder="Google Maps link" value={form.google_maps_link}
-            onChange={(e) => setForm({ ...form, google_maps_link: e.target.value })}
-            className="border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
-          <input placeholder="Latitude (live map pin)" type="number" step="any" value={form.latitude}
-            onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-            className="border border-ink/15 rounded-lg px-3 py-2 text-sm font-mono focus:border-brand-500 focus:outline-none" />
-          <input placeholder="Longitude" type="number" step="any" value={form.longitude}
-            onChange={(e) => setForm({ ...form, longitude: e.target.value })}
-            className="border border-ink/15 rounded-lg px-3 py-2 text-sm font-mono focus:border-brand-500 focus:outline-none" />
-        </>
+        <div className="space-y-3 pt-1 border-t border-ink/10">
+          <Field label="Description">
+            <textarea value={form.description} rows={2}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className={inputClass} />
+          </Field>
+          <Field label="Amenities" hint="comma separated, e.g. 'Park facing, Underground drainage'">
+            <input value={form.amenities}
+              onChange={(e) => setForm({ ...form, amenities: e.target.value })}
+              className={inputClass} />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Patta number">
+              <input value={form.patta_number}
+                onChange={(e) => setForm({ ...form, patta_number: e.target.value })}
+                className={inputClass} />
+            </Field>
+            <Field label="Google Maps link" hint="optional, for reference">
+              <input value={form.google_maps_link}
+                onChange={(e) => setForm({ ...form, google_maps_link: e.target.value })}
+                className={inputClass} />
+            </Field>
+          </div>
+          <LocationPicker latitude={coords.latitude} longitude={coords.longitude} onChange={setCoords} />
+        </div>
       )}
 
-      <div className="col-span-2 flex gap-2">
-        <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 rounded-lg text-sm transition">Add</button>
+      <div className="flex gap-2 pt-1">
+        <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 rounded-lg text-sm transition">Add plot</button>
         <button type="button" onClick={onDone} className="text-sm text-ink/50 hover:text-ink">Cancel</button>
       </div>
     </form>
@@ -229,7 +255,7 @@ function NewPlotFormToggle({ projectId, onCreated }) {
   const [open, setOpen] = useState(false)
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 text-sm text-brand-700 font-medium hover:underline">
+      <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 text-sm text-brand-500 font-medium hover:underline">
         <Plus size={15} /> Add plot
       </button>
     )
@@ -300,7 +326,7 @@ function BulkImportPlots({ projectId, onImported }) {
   }
 
   return (
-    <label className={`flex items-center gap-1.5 text-sm font-medium hover:underline cursor-pointer ${busy ? 'text-ink/40' : 'text-brand-700'}`}>
+    <label className={`flex items-center gap-1.5 text-sm font-medium hover:underline cursor-pointer ${busy ? 'text-ink/40' : 'text-brand-500'}`}>
       <FileSpreadsheet size={15} />
       {busy ? 'Importing...' : 'Bulk import (CSV)'}
       <input type="file" accept=".csv" onChange={handleFile} disabled={busy} className="hidden" />
@@ -369,7 +395,7 @@ function LayoutMap({ project, plots, onUpdated, onCreated, onViewDetail }) {
             >
               <p className="font-mono font-medium text-ink mb-1">Plot {plot.plot_number}</p>
               <p className="font-mono text-ink/60 mb-2">{formatMoney(plot.total_price)}</p>
-              <button onClick={() => onViewDetail(plot.id)} className="text-brand-700 hover:underline mb-2 block">
+              <button onClick={() => onViewDetail(plot.id)} className="text-brand-500 hover:underline mb-2 block">
                 View full details →
               </button>
               <div className="flex flex-wrap gap-1">
@@ -387,7 +413,7 @@ function LayoutMap({ project, plots, onUpdated, onCreated, onViewDetail }) {
         {pendingPosition && (
           <div
             style={{ left: `${pendingPosition.x}%`, top: `${pendingPosition.y}%` }}
-            className="absolute -translate-x-1/2 z-20 w-64"
+            className="absolute -translate-x-1/2 z-20 w-72"
           >
             <NewPlotForm
               projectId={project.id}
@@ -433,7 +459,7 @@ function PlotDetailModal({ plotId, onClose, onUpdated, currency }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="doc-card max-w-2xl w-full max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         {loading || !data ? (
           <div className="p-10 text-center text-ink/40 text-sm">Loading plot details...</div>
@@ -441,7 +467,7 @@ function PlotDetailModal({ plotId, onClose, onUpdated, currency }) {
           <div className="p-6">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-xs uppercase tracking-widest text-brand-600 font-medium">Plot Detail</p>
+                <p className="text-xs uppercase tracking-widest text-brand-500 font-medium">Plot Detail</p>
                 <h2 className="font-display text-2xl font-bold text-ink">{data.plot.plot_number}</h2>
               </div>
               <button onClick={onClose} className="text-ink/40 hover:text-ink"><X size={20} /></button>
@@ -452,7 +478,7 @@ function PlotDetailModal({ plotId, onClose, onUpdated, currency }) {
                 {data.plot.image_url ? (
                   <img src={data.plot.image_url} alt={data.plot.plot_number} className="w-full h-40 object-cover rounded-lg border border-ink/15" />
                 ) : (
-                  <button onClick={() => inputRef.current.click()} className="w-full h-40 rounded-lg border border-dashed border-ink/25 flex flex-col items-center justify-center gap-1 text-ink/40 hover:border-brand-500 hover:text-brand-600 transition">
+                  <button onClick={() => inputRef.current.click()} className="w-full h-40 rounded-lg border border-dashed border-ink/25 flex flex-col items-center justify-center gap-1 text-ink/40 hover:border-brand-500 hover:text-brand-500 transition">
                     <ImageIcon size={24} />
                     <span className="text-xs">Add plot photo</span>
                   </button>
@@ -466,12 +492,12 @@ function PlotDetailModal({ plotId, onClose, onUpdated, currency }) {
                 <div className="flex justify-between"><span className="text-ink/50 font-sans">Status</span><span className="uppercase">{data.plot.status}</span></div>
                 {data.plot.patta_number && <div className="flex justify-between"><span className="text-ink/50 font-sans">Patta No.</span><span>{data.plot.patta_number}</span></div>}
                 {data.plot.latitude != null && (
-                  <div className="flex items-center gap-1 text-brand-600 font-sans text-xs pt-1">
-                    <Navigation size={11} /> On live map ({data.plot.latitude.toFixed(5)}, {data.plot.longitude.toFixed(5)})
+                  <div className="flex items-center gap-1 text-brand-500 font-sans text-xs pt-1">
+                    <Navigation size={11} /> On live map
                   </div>
                 )}
                 {data.plot.google_maps_link && (
-                  <a href={data.plot.google_maps_link} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-brand-700 hover:underline font-sans text-xs pt-1">
+                  <a href={data.plot.google_maps_link} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-brand-500 hover:underline font-sans text-xs pt-1">
                     <MapPin size={12} /> View on Google Maps <ExternalLink size={10} />
                   </a>
                 )}
@@ -489,7 +515,7 @@ function PlotDetailModal({ plotId, onClose, onUpdated, currency }) {
                 <p className="text-xs uppercase tracking-wide text-ink/40 mb-1">Amenities</p>
                 <div className="flex flex-wrap gap-1.5">
                   {data.plot.amenities.split(',').map((a, i) => (
-                    <span key={i} className="record-tag text-brand-600">{a.trim()}</span>
+                    <span key={i} className="record-tag text-brand-500">{a.trim()}</span>
                   ))}
                 </div>
               </div>
@@ -508,7 +534,7 @@ function PlotDetailModal({ plotId, onClose, onUpdated, currency }) {
                         <p className="text-xs text-ink/50 font-mono">{b.customer_phone}</p>
                       </div>
                       <div className="text-right">
-                        <span className="record-tag text-brand-600">{b.status}</span>
+                        <span className="record-tag text-brand-500">{b.status}</span>
                         <p className="text-xs text-ink/50 font-mono mt-1">{formatMoney(b.total_paid, currency)} paid</p>
                       </div>
                     </div>
@@ -522,7 +548,7 @@ function PlotDetailModal({ plotId, onClose, onUpdated, currency }) {
                 <p className="font-display font-medium text-ink text-sm mb-2">Linked Documents</p>
                 <div className="space-y-1">
                   {data.documents.map((d) => (
-                    <a key={d.id} href={d.file_url} target="_blank" rel="noreferrer" className="block text-sm text-brand-700 hover:underline">
+                    <a key={d.id} href={d.file_url} target="_blank" rel="noreferrer" className="block text-sm text-brand-500 hover:underline">
                       {d.document_type.replace(/_/g, ' ')}
                     </a>
                   ))}
@@ -555,7 +581,7 @@ function PlotCell({ plot, onUpdated, onViewDetail, currency }) {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full aspect-square rounded-lg text-white font-mono flex flex-col items-center justify-center border border-black/10 transition hover:brightness-110 hover:scale-[1.03] ${STATUS_COLORS[plot.status]}`}
+        className={`w-full aspect-square rounded-lg text-white font-mono flex flex-col items-center justify-center border border-black/20 transition hover:brightness-110 hover:scale-[1.03] ${STATUS_COLORS[plot.status]}`}
         title={`Plot ${plot.plot_number} — ${plot.extent_sqft} sqft`}
       >
         <span className="text-xs font-medium">{plot.plot_number}</span>
@@ -566,7 +592,7 @@ function PlotCell({ plot, onUpdated, onViewDetail, currency }) {
         <div className="absolute z-10 top-full mt-1 left-0 doc-card p-3 w-48 text-xs shadow-lg">
           <p className="font-mono font-medium text-ink mb-1">Plot {plot.plot_number}</p>
           <p className="font-mono text-ink/60 mb-2">{formatMoney(plot.total_price, currency)}</p>
-          <button onClick={onViewDetail} className="text-brand-700 hover:underline mb-2 block">View full details →</button>
+          <button onClick={onViewDetail} className="text-brand-500 hover:underline mb-2 block">View full details →</button>
           <p className="text-ink/40 mb-2 uppercase tracking-wide text-[10px]">Change status:</p>
           <div className="flex flex-wrap gap-1">
             {Object.keys(STATUS_COLORS).map((s) => (
@@ -592,7 +618,7 @@ export default function Projects() {
   const [selectedProject, setSelectedProject] = useState(null)
   const [editingProject, setEditingProject] = useState(null)
   const [plots, setPlots] = useState([])
-  const [view, setView] = useState('grid') // 'grid' | 'map' | 'live'
+  const [view, setView] = useState('grid')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
   const [detailPlotId, setDetailPlotId] = useState(null)
@@ -639,7 +665,6 @@ export default function Projects() {
       <h1 className="font-display text-3xl font-bold text-ink mb-4">Projects &amp; Plots</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Project list */}
         <div className="lg:col-span-1">
           <NewProjectForm onCreated={loadProjects} />
           <div className="space-y-2 mt-3">
@@ -663,7 +688,7 @@ export default function Projects() {
                     <p className="text-xs text-ink/50 flex items-center gap-1"><MapPin size={11} />{p.location || 'No location set'}</p>
                   </button>
                   <div className="flex gap-3 mt-1.5">
-                    <button onClick={() => setEditingProject(p)} className="text-xs text-brand-700 hover:underline">Edit</button>
+                    <button onClick={() => setEditingProject(p)} className="text-xs text-brand-500 hover:underline">Edit</button>
                     <button onClick={() => deleteProject(p)} className="text-xs text-rust-500 hover:underline">Delete</button>
                   </div>
                 </div>
@@ -673,7 +698,6 @@ export default function Projects() {
           </div>
         </div>
 
-        {/* Plot view for selected project */}
         <div className="lg:col-span-2">
           {!selectedProject ? (
             <div className="doc-card p-10 text-center text-ink/40 text-sm">
@@ -706,7 +730,7 @@ export default function Projects() {
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder="Search plot no."
-                      className="border border-ink/15 rounded-lg pl-6 pr-2 py-1 text-xs w-32 font-mono focus:border-brand-500 focus:outline-none"
+                      className="border border-ink/15 rounded-lg pl-6 pr-2 py-1 text-xs w-32 font-mono bg-transparent focus:border-brand-500 focus:outline-none"
                     />
                   </div>
                 </div>

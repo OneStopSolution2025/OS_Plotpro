@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
-from app.routers import auth, tenants, plots, enquiries, bookings, emi, staff, customer_auth, uploads, support_tickets, payment_gateway
+from app.routers import auth, tenants, plots, enquiries, bookings, emi, staff, customer_auth, uploads, support_tickets, payment_gateway, geocode
 from app.services.reminders import start_scheduler
 
 import os
@@ -42,6 +42,7 @@ app.include_router(customer_auth.router)
 app.include_router(uploads.router)
 app.include_router(support_tickets.router)
 app.include_router(payment_gateway.router)
+app.include_router(geocode.router)
 
 
 @app.get("/")
