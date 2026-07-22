@@ -15,6 +15,9 @@ from app.models.booking import Booking
 from app.models.emi import EMIInstallment, Payment
 from app.schemas.customer_auth import OTPRequest, OTPVerify, CustomerToken, CustomerMeOut
 from app.services.notifications import send_sms
+import logging
+
+logger = logging.getLogger("plotpro.customer_auth")
 
 router = APIRouter(prefix="/api/customer-auth", tags=["customer portal"])
 
@@ -57,6 +60,9 @@ async def request_otp(payload: OTPRequest, db: AsyncSession = Depends(get_db)):
 
 @router.post("/verify-otp", response_model=CustomerToken)
 async def verify_otp(payload: OTPVerify, db: AsyncSession = Depends(get_db)):
+    # .first() instead of .scalar_one_or_none() — the latter raises an
+    # exception (not a clean "no match") if more than one row happens to
+    # match, which .order_by() alone doesn't protect against.
     result = await db.execute(
         select(CustomerOTP)
         .where(
@@ -66,8 +72,20 @@ async def verify_otp(payload: OTPVerify, db: AsyncSession = Depends(get_db)):
         )
         .order_by(CustomerOTP.created_at.desc())
     )
-    otp = result.scalar_one_or_none()
+    otp = result.scalars().first()
+
     if not otp:
+        # Diagnostic log: shows exactly why it didn't match (wrong code,
+        # already used, or nothing sent at all) — check Railway Deploy
+        # Logs for this line if "Invalid OTP" happens again.
+        recent = await db.execute(
+            select(CustomerOTP).where(CustomerOTP.phone == payload.phone).order_by(CustomerOTP.created_at.desc())
+        )
+        recent_rows = recent.scalars().all()[:3]
+        logger.warning(
+            f"OTP mismatch for phone {payload.phone}, entered code {payload.otp_code!r}. "
+            f"Recent codes on file: {[(r.otp_code, 'used' if r.is_used else 'unused') for r in recent_rows]}"
+        )
         raise HTTPException(status_code=400, detail="Invalid OTP")
     if otp.expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="OTP expired, please request a new one")
