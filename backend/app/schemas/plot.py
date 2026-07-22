@@ -10,6 +10,8 @@ class ProjectCreate(BaseModel):
     dtcp_approval_no: str | None = None
     rera_reg_no: str | None = None
     description: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class ProjectOut(ProjectCreate):
@@ -36,6 +38,8 @@ class PlotCreate(BaseModel):
     amenities: str | None = None
     patta_number: str | None = None
     google_maps_link: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class PlotUpdate(BaseModel):
@@ -47,6 +51,8 @@ class PlotUpdate(BaseModel):
     patta_number: str | None = None
     google_maps_link: str | None = None
     image_url: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class PlotOut(BaseModel):
@@ -68,6 +74,8 @@ class PlotOut(BaseModel):
     google_maps_link: str | None = None
     map_x_percent: float | None = None
     map_y_percent: float | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
     class Config:
         from_attributes = True

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MapPin, AlertTriangle, Clock, ArrowRight, LifeBuoy } from 'lucide-react'
+import { MapPin, AlertTriangle, Clock, ArrowRight, LifeBuoy, Wallet, TrendingUp } from 'lucide-react'
 import api from '../api/client'
 import { useCustomerAuth } from '../context/CustomerAuthContext'
 import { formatMoney } from '../utils/currency'
@@ -15,8 +15,6 @@ export default function Dashboard() {
   useEffect(() => {
     api.get('/customer-auth/my-bookings').then(async (res) => {
       setBookings(res.data)
-      // Pull each booking's ledger so we can surface due/overdue installments
-      // right on the dashboard, not buried a click away.
       const entries = await Promise.all(
         res.data.map((b) => api.get(`/customer-auth/my-ledger/${b.id}`).then((r) => [b.id, r.data]).catch(() => [b.id, null]))
       )
@@ -68,36 +66,53 @@ export default function Dashboard() {
       )}
 
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <div className="doc-card p-4">
-          <p className="text-xs uppercase tracking-wide text-ink/50">Total Paid</p>
-          <p className="font-mono text-xl font-semibold text-brand-600 mt-1">{formatMoney(totalPaid, currency)}</p>
+        <div className="doc-card p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center flex-shrink-0">
+            <TrendingUp size={18} />
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-ink/50">Total Paid</p>
+            <p className="font-mono text-lg font-semibold text-brand-600 mt-0.5">{formatMoney(totalPaid, currency)}</p>
+          </div>
         </div>
-        <div className="doc-card p-4">
-          <p className="text-xs uppercase tracking-wide text-ink/50">Balance Due</p>
-          <p className="font-mono text-xl font-semibold text-ink mt-1">{formatMoney(totalDue - totalPaid, currency)}</p>
+        <div className="doc-card p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-ink/5 text-ink/60 flex items-center justify-center flex-shrink-0">
+            <Wallet size={18} />
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-ink/50">Balance Due</p>
+            <p className="font-mono text-lg font-semibold text-ink mt-0.5">{formatMoney(totalDue - totalPaid, currency)}</p>
+          </div>
         </div>
       </div>
 
       <p className="font-display font-semibold text-ink mb-2">My Plots</p>
       <div className="space-y-3 mb-6">
-        {bookings.map((b) => (
-          <Link key={b.id} to={`/ledger/${b.id}`} className="flex gap-4 doc-card p-4 hover:border-brand-400 transition group">
-            {b.image_url ? (
-              <img src={b.image_url} alt={b.plot_number} className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
-            ) : (
-              <div className="w-20 h-20 bg-ink/5 rounded-lg flex items-center justify-center flex-shrink-0">
-                <MapPin size={20} className="text-ink/20" />
+        {bookings.map((b) => {
+          const ledger = ledgers[b.id]
+          const paid = ledger?.payments.reduce((s, p) => s + p.amount, 0) || 0
+          const pct = b.total_price > 0 ? Math.min(100, Math.round((paid / b.total_price) * 100)) : 0
+          return (
+            <Link key={b.id} to={`/ledger/${b.id}`} className="flex gap-4 doc-card p-4 hover:border-brand-400 transition group">
+              {b.image_url ? (
+                <img src={b.image_url} alt={b.plot_number} className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
+              ) : (
+                <div className="w-20 h-20 bg-ink/5 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <MapPin size={20} className="text-ink/20" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-ink/40 font-mono">Plot {b.plot_number} · {b.project_name}</p>
+                <p className="font-mono font-semibold text-ink mt-1">{formatMoney(b.total_price, currency)}</p>
+                <div className="h-1.5 bg-ink/5 rounded-full overflow-hidden mt-2">
+                  <div className="h-full bg-brand-500 rounded-full" style={{ width: `${pct}%` }} />
+                </div>
+                <p className="text-xs text-ink/40 mt-1">{pct}% paid</p>
               </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-ink/40 font-mono">Plot {b.plot_number} · {b.project_name}</p>
-              <p className="font-mono font-semibold text-ink mt-1">{formatMoney(b.total_price, currency)}</p>
-              <p className="text-sm text-brand-600 mt-1 flex items-center gap-1 group-hover:gap-2 transition-all">
-                View EMI & payments <ArrowRight size={13} />
-              </p>
-            </div>
-          </Link>
-        ))}
+              <ArrowRight size={16} className="text-ink/30 group-hover:text-brand-600 group-hover:translate-x-1 transition-all flex-shrink-0 self-center" />
+            </Link>
+          )
+        })}
         {bookings.length === 0 && (
           <div className="doc-card p-8 text-center text-ink/40 text-sm">No bookings on your account yet.</div>
         )}

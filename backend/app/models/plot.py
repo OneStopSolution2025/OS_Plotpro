@@ -27,6 +27,12 @@ class Project(UUIDPKMixin, TenantScopedMixin, TimestampMixin, Base):
     layout_image_url: Mapped[str] = mapped_column(String(500), nullable=True)  # for the clickable plot map
     description: Mapped[str] = mapped_column(Text, nullable=True)
 
+    # Real-world GPS center point for the project, used to center the live
+    # map view (OpenStreetMap/Leaflet) even before individual plots have
+    # their own coordinates pinned.
+    latitude: Mapped[float] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float] = mapped_column(Float, nullable=True)
+
 
 class Block(UUIDPKMixin, TenantScopedMixin, TimestampMixin, Base):
     """Optional grouping within a project, e.g. 'Block A'. Small projects can skip this."""
@@ -65,6 +71,13 @@ class Plot(UUIDPKMixin, TenantScopedMixin, TimestampMixin, Base):
     # on top of layout_image_url, so it works regardless of image resolution)
     map_x_percent: Mapped[float] = mapped_column(Float, nullable=True)
     map_y_percent: Mapped[float] = mapped_column(Float, nullable=True)
+
+    # Real-world GPS coordinates — separate from map_x_percent/map_y_percent
+    # above. These drive the live map view (actual location on Earth,
+    # colored by live status), while the percent fields only place a marker
+    # on top of an uploaded layout image.
+    latitude: Mapped[float] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float] = mapped_column(Float, nullable=True)
 
     @property
     def total_price(self) -> float:

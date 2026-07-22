@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from 'react'
-import { MapPin, Upload, Grid3x3, Map as MapIcon, Search, Plus, FileSpreadsheet, X, ExternalLink, Image as ImageIcon } from 'lucide-react'
+import { MapPin, Upload, Grid3x3, Map as MapIcon, Search, Plus, FileSpreadsheet, X, ExternalLink, Image as ImageIcon, Navigation } from 'lucide-react'
 import api from '../api/client'
 import { useToast } from '../context/ToastContext'
 import { errorMessage } from '../utils/errors'
 import { formatMoney } from '../utils/currency'
 import { useAuth } from '../context/AuthContext'
+import LiveMapView from './LiveMapView'
 
 const STATUS_COLORS = {
   available: 'bg-brand-600',
@@ -15,15 +16,19 @@ const STATUS_COLORS = {
 }
 
 function NewProjectForm({ onCreated }) {
-  const [form, setForm] = useState({ name: '', location: '', survey_number: '', description: '' })
+  const [form, setForm] = useState({ name: '', location: '', survey_number: '', description: '', latitude: '', longitude: '' })
   const [open, setOpen] = useState(false)
   const { showToast } = useToast()
 
   const submit = async (e) => {
     e.preventDefault()
     try {
-      await api.post('/plots/projects', form)
-      setForm({ name: '', location: '', survey_number: '', description: '' })
+      await api.post('/plots/projects', {
+        ...form,
+        latitude: form.latitude ? parseFloat(form.latitude) : null,
+        longitude: form.longitude ? parseFloat(form.longitude) : null,
+      })
+      setForm({ name: '', location: '', survey_number: '', description: '', latitude: '', longitude: '' })
       setOpen(false)
       showToast(`Project "${form.name}" created`, 'success')
       onCreated()
@@ -44,18 +49,26 @@ function NewProjectForm({ onCreated }) {
     <form onSubmit={submit} className="doc-card p-4 space-y-2 mb-4">
       <input placeholder="Project name" required value={form.name}
         onChange={(e) => setForm({ ...form, name: e.target.value })}
-        className="w-full border border-ink/15 px-3 py-2 text-sm transition focus:border-brand-500 focus:outline-none" />
+        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm transition focus:border-brand-500 focus:outline-none" />
       <input placeholder="Location" value={form.location}
         onChange={(e) => setForm({ ...form, location: e.target.value })}
-        className="w-full border border-ink/15 px-3 py-2 text-sm transition focus:border-brand-500 focus:outline-none" />
+        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm transition focus:border-brand-500 focus:outline-none" />
       <input placeholder="Survey number" value={form.survey_number}
         onChange={(e) => setForm({ ...form, survey_number: e.target.value })}
-        className="w-full border border-ink/15 px-3 py-2 text-sm transition focus:border-brand-500 focus:outline-none" />
+        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm transition focus:border-brand-500 focus:outline-none" />
       <textarea placeholder="Short description (shown to customers)" value={form.description} rows={2}
         onChange={(e) => setForm({ ...form, description: e.target.value })}
-        className="w-full border border-ink/15 px-3 py-2 text-sm transition focus:border-brand-500 focus:outline-none" />
+        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm transition focus:border-brand-500 focus:outline-none" />
+      <div className="grid grid-cols-2 gap-2">
+        <input placeholder="Latitude (for live map)" type="number" step="any" value={form.latitude}
+          onChange={(e) => setForm({ ...form, latitude: e.target.value })}
+          className="border border-ink/15 rounded-lg px-3 py-2 text-sm font-mono focus:border-brand-500 focus:outline-none" />
+        <input placeholder="Longitude" type="number" step="any" value={form.longitude}
+          onChange={(e) => setForm({ ...form, longitude: e.target.value })}
+          className="border border-ink/15 rounded-lg px-3 py-2 text-sm font-mono focus:border-brand-500 focus:outline-none" />
+      </div>
       <div className="flex gap-2">
-        <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 text-sm transition">Create</button>
+        <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 rounded-lg text-sm transition">Create</button>
         <button type="button" onClick={() => setOpen(false)} className="text-sm text-ink/50 hover:text-ink">Cancel</button>
       </div>
     </form>
@@ -66,13 +79,18 @@ function EditProjectForm({ project, onDone, onUpdated }) {
   const [form, setForm] = useState({
     name: project.name, location: project.location || '', survey_number: project.survey_number || '',
     dtcp_approval_no: project.dtcp_approval_no || '', rera_reg_no: project.rera_reg_no || '', description: project.description || '',
+    latitude: project.latitude ?? '', longitude: project.longitude ?? '',
   })
   const { showToast } = useToast()
 
   const submit = async (e) => {
     e.preventDefault()
     try {
-      await api.patch(`/plots/projects/${project.id}`, form)
+      await api.patch(`/plots/projects/${project.id}`, {
+        ...form,
+        latitude: form.latitude === '' ? null : parseFloat(form.latitude),
+        longitude: form.longitude === '' ? null : parseFloat(form.longitude),
+      })
       showToast('Project updated', 'success')
       onDone()
       onUpdated()
@@ -83,26 +101,35 @@ function EditProjectForm({ project, onDone, onUpdated }) {
 
   return (
     <form onSubmit={submit} className="doc-card p-4 space-y-2 mb-4">
-      <input placeholder="Project name" required value={form.name}
+      <p className="font-display font-semibold text-ink mb-1">Edit {project.name}</p>
+      <input placeholder="Project name" value={form.name}
         onChange={(e) => setForm({ ...form, name: e.target.value })}
-        className="w-full border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
       <input placeholder="Location" value={form.location}
         onChange={(e) => setForm({ ...form, location: e.target.value })}
-        className="w-full border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
       <input placeholder="Survey number" value={form.survey_number}
         onChange={(e) => setForm({ ...form, survey_number: e.target.value })}
-        className="w-full border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
       <input placeholder="DTCP approval no." value={form.dtcp_approval_no}
         onChange={(e) => setForm({ ...form, dtcp_approval_no: e.target.value })}
-        className="w-full border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
       <input placeholder="RERA registration no." value={form.rera_reg_no}
         onChange={(e) => setForm({ ...form, rera_reg_no: e.target.value })}
-        className="w-full border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
       <textarea placeholder="Description" value={form.description} rows={2}
         onChange={(e) => setForm({ ...form, description: e.target.value })}
-        className="w-full border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+        className="w-full border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+      <div className="grid grid-cols-2 gap-2">
+        <input placeholder="Latitude" type="number" step="any" value={form.latitude}
+          onChange={(e) => setForm({ ...form, latitude: e.target.value })}
+          className="border border-ink/15 rounded-lg px-3 py-2 text-sm font-mono focus:border-brand-500 focus:outline-none" />
+        <input placeholder="Longitude" type="number" step="any" value={form.longitude}
+          onChange={(e) => setForm({ ...form, longitude: e.target.value })}
+          className="border border-ink/15 rounded-lg px-3 py-2 text-sm font-mono focus:border-brand-500 focus:outline-none" />
+      </div>
       <div className="flex gap-2">
-        <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 text-sm transition">Save changes</button>
+        <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 rounded-lg text-sm transition">Save changes</button>
         <button type="button" onClick={onDone} className="text-sm text-ink/50 hover:text-ink">Cancel</button>
       </div>
     </form>
@@ -110,11 +137,14 @@ function EditProjectForm({ project, onDone, onUpdated }) {
 }
 
 // Plot form used both for the classic grid flow (no position) and the
-// map flow (pre-filled x/y percent from a click on the layout image).
+// layout-image-click flow (pre-filled x/y percent). GPS latitude/longitude
+// are always optional, separate fields, entered manually or looked up from
+// Google Maps by the promoter.
 function NewPlotForm({ projectId, presetPosition, onDone, onCreated }) {
   const [form, setForm] = useState({
     plot_number: '', extent_sqft: '', price_per_sqft: '', facing: '',
     description: '', amenities: '', patta_number: '', google_maps_link: '',
+    latitude: '', longitude: '',
   })
   const [expanded, setExpanded] = useState(false)
   const { showToast } = useToast()
@@ -132,6 +162,8 @@ function NewPlotForm({ projectId, presetPosition, onDone, onCreated }) {
         amenities: form.amenities || null,
         patta_number: form.patta_number || null,
         google_maps_link: form.google_maps_link || null,
+        latitude: form.latitude ? parseFloat(form.latitude) : null,
+        longitude: form.longitude ? parseFloat(form.longitude) : null,
         map_x_percent: presetPosition?.x ?? null,
         map_y_percent: presetPosition?.y ?? null,
       })
@@ -144,47 +176,65 @@ function NewPlotForm({ projectId, presetPosition, onDone, onCreated }) {
   }
 
   return (
-    <form onSubmit={submit} className="doc-card p-4 grid grid-cols-2 gap-2 animate-[fadeIn_0.15s_ease-out]">
+    <form onSubmit={submit} className="doc-card p-4 grid grid-cols-2 gap-2">
       <input placeholder="Plot no." required autoFocus value={form.plot_number}
         onChange={(e) => setForm({ ...form, plot_number: e.target.value })}
-        className="border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+        className="border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
       <input placeholder="Facing" value={form.facing}
         onChange={(e) => setForm({ ...form, facing: e.target.value })}
-        className="border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+        className="border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
       <input placeholder="Extent (sqft)" type="number" required value={form.extent_sqft}
         onChange={(e) => setForm({ ...form, extent_sqft: e.target.value })}
-        className="border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+        className="border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
       <input placeholder="Price/sqft" type="number" required value={form.price_per_sqft}
         onChange={(e) => setForm({ ...form, price_per_sqft: e.target.value })}
-        className="border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+        className="border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
 
       {!expanded ? (
         <button type="button" onClick={() => setExpanded(true)} className="col-span-2 text-xs text-brand-700 hover:underline text-left">
-          + Add more details (description, amenities, patta no.)
+          + Add more details (description, amenities, patta no., GPS location)
         </button>
       ) : (
         <>
           <textarea placeholder="Description" value={form.description} rows={2}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="col-span-2 border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+            className="col-span-2 border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
           <input placeholder="Amenities (comma separated)" value={form.amenities}
             onChange={(e) => setForm({ ...form, amenities: e.target.value })}
-            className="col-span-2 border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+            className="col-span-2 border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
           <input placeholder="Patta number" value={form.patta_number}
             onChange={(e) => setForm({ ...form, patta_number: e.target.value })}
-            className="border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+            className="border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
           <input placeholder="Google Maps link" value={form.google_maps_link}
             onChange={(e) => setForm({ ...form, google_maps_link: e.target.value })}
-            className="border border-ink/15 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+            className="border border-ink/15 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+          <input placeholder="Latitude (live map pin)" type="number" step="any" value={form.latitude}
+            onChange={(e) => setForm({ ...form, latitude: e.target.value })}
+            className="border border-ink/15 rounded-lg px-3 py-2 text-sm font-mono focus:border-brand-500 focus:outline-none" />
+          <input placeholder="Longitude" type="number" step="any" value={form.longitude}
+            onChange={(e) => setForm({ ...form, longitude: e.target.value })}
+            className="border border-ink/15 rounded-lg px-3 py-2 text-sm font-mono focus:border-brand-500 focus:outline-none" />
         </>
       )}
 
       <div className="col-span-2 flex gap-2">
-        <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 text-sm transition">Add</button>
+        <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 rounded-lg text-sm transition">Add</button>
         <button type="button" onClick={onDone} className="text-sm text-ink/50 hover:text-ink">Cancel</button>
       </div>
     </form>
   )
+}
+
+function NewPlotFormToggle({ projectId, onCreated }) {
+  const [open, setOpen] = useState(false)
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 text-sm text-brand-700 font-medium hover:underline">
+        <Plus size={15} /> Add plot
+      </button>
+    )
+  }
+  return <NewPlotForm projectId={projectId} onDone={() => setOpen(false)} onCreated={onCreated} />
 }
 
 function LayoutUpload({ projectId, onUploaded }) {
@@ -215,7 +265,7 @@ function LayoutUpload({ projectId, onUploaded }) {
       </p>
       <button
         onClick={() => inputRef.current.click()}
-        className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 text-sm transition"
+        className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm transition"
       >
         Upload layout image
       </button>
@@ -258,7 +308,7 @@ function BulkImportPlots({ projectId, onImported }) {
   )
 }
 
-function LayoutMap({ project, plots, onUpdated, onCreated, onViewDetail, currency }) {
+function LayoutMap({ project, plots, onUpdated, onCreated, onViewDetail }) {
   const [pendingPosition, setPendingPosition] = useState(null)
   const [openPlotId, setOpenPlotId] = useState(null)
   const imgRef = useRef(null)
@@ -295,7 +345,7 @@ function LayoutMap({ project, plots, onUpdated, onCreated, onViewDetail, currenc
           src={project.layout_image_url}
           alt="Site layout"
           onClick={handleImageClick}
-          className="w-full cursor-crosshair border border-ink/15"
+          className="w-full cursor-crosshair border border-ink/15 rounded-lg"
         />
         {plottedPlots.map((plot) => (
           <button
@@ -318,14 +368,14 @@ function LayoutMap({ project, plots, onUpdated, onCreated, onViewDetail, currenc
               className="absolute -translate-x-1/2 mt-4 doc-card p-3 w-48 text-xs shadow-lg z-10"
             >
               <p className="font-mono font-medium text-ink mb-1">Plot {plot.plot_number}</p>
-              <p className="font-mono text-ink/60 mb-2">{formatMoney(plot.total_price, currency)}</p>
+              <p className="font-mono text-ink/60 mb-2">{formatMoney(plot.total_price)}</p>
               <button onClick={() => onViewDetail(plot.id)} className="text-brand-700 hover:underline mb-2 block">
                 View full details →
               </button>
               <div className="flex flex-wrap gap-1">
                 {Object.keys(STATUS_COLORS).map((s) => (
                   <button key={s} onClick={() => changeStatus(plot.id, s)}
-                    className={`px-2 py-1 ${STATUS_COLORS[s]} text-white text-[10px] font-mono transition hover:opacity-80`}>
+                    className={`px-2 py-1 rounded ${STATUS_COLORS[s]} text-white text-[10px] font-mono transition hover:opacity-80`}>
                     {s}
                   </button>
                 ))}
@@ -391,8 +441,8 @@ function PlotDetailModal({ plotId, onClose, onUpdated, currency }) {
           <div className="p-6">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="font-mono text-xs uppercase tracking-widest text-brand-600">Plot Detail</p>
-                <h2 className="font-display text-2xl font-semibold text-ink">{data.plot.plot_number}</h2>
+                <p className="text-xs uppercase tracking-widest text-brand-600 font-medium">Plot Detail</p>
+                <h2 className="font-display text-2xl font-bold text-ink">{data.plot.plot_number}</h2>
               </div>
               <button onClick={onClose} className="text-ink/40 hover:text-ink"><X size={20} /></button>
             </div>
@@ -400,9 +450,9 @@ function PlotDetailModal({ plotId, onClose, onUpdated, currency }) {
             <div className="grid grid-cols-2 gap-4 mb-5">
               <div className="relative">
                 {data.plot.image_url ? (
-                  <img src={data.plot.image_url} alt={data.plot.plot_number} className="w-full h-40 object-cover border border-ink/15" />
+                  <img src={data.plot.image_url} alt={data.plot.plot_number} className="w-full h-40 object-cover rounded-lg border border-ink/15" />
                 ) : (
-                  <button onClick={() => inputRef.current.click()} className="w-full h-40 border border-dashed border-ink/25 flex flex-col items-center justify-center gap-1 text-ink/40 hover:border-brand-500 hover:text-brand-600 transition">
+                  <button onClick={() => inputRef.current.click()} className="w-full h-40 rounded-lg border border-dashed border-ink/25 flex flex-col items-center justify-center gap-1 text-ink/40 hover:border-brand-500 hover:text-brand-600 transition">
                     <ImageIcon size={24} />
                     <span className="text-xs">Add plot photo</span>
                   </button>
@@ -415,6 +465,11 @@ function PlotDetailModal({ plotId, onClose, onUpdated, currency }) {
                 <div className="flex justify-between"><span className="text-ink/50 font-sans">Facing</span><span>{data.plot.facing || '-'}</span></div>
                 <div className="flex justify-between"><span className="text-ink/50 font-sans">Status</span><span className="uppercase">{data.plot.status}</span></div>
                 {data.plot.patta_number && <div className="flex justify-between"><span className="text-ink/50 font-sans">Patta No.</span><span>{data.plot.patta_number}</span></div>}
+                {data.plot.latitude != null && (
+                  <div className="flex items-center gap-1 text-brand-600 font-sans text-xs pt-1">
+                    <Navigation size={11} /> On live map ({data.plot.latitude.toFixed(5)}, {data.plot.longitude.toFixed(5)})
+                  </div>
+                )}
                 {data.plot.google_maps_link && (
                   <a href={data.plot.google_maps_link} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-brand-700 hover:underline font-sans text-xs pt-1">
                     <MapPin size={12} /> View on Google Maps <ExternalLink size={10} />
@@ -447,7 +502,7 @@ function PlotDetailModal({ plotId, onClose, onUpdated, currency }) {
               ) : (
                 <div className="space-y-2">
                   {data.bookings.map((b) => (
-                    <div key={b.id} className="bg-ink/5 p-3 text-sm flex justify-between items-center">
+                    <div key={b.id} className="bg-ink/5 rounded-lg p-3 text-sm flex justify-between items-center">
                       <div>
                         <p className="font-medium text-ink">{b.customer_name}</p>
                         <p className="text-xs text-ink/50 font-mono">{b.customer_phone}</p>
@@ -481,6 +536,55 @@ function PlotDetailModal({ plotId, onClose, onUpdated, currency }) {
   )
 }
 
+function PlotCell({ plot, onUpdated, onViewDetail, currency }) {
+  const [open, setOpen] = useState(false)
+  const { showToast } = useToast()
+
+  const changeStatus = async (status) => {
+    try {
+      await api.patch(`/plots/${plot.id}`, { status })
+      showToast('Plot status updated', 'success')
+      setOpen(false)
+      onUpdated()
+    } catch (err) {
+      showToast(errorMessage(err), 'error')
+    }
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={`w-full aspect-square rounded-lg text-white font-mono flex flex-col items-center justify-center border border-black/10 transition hover:brightness-110 hover:scale-[1.03] ${STATUS_COLORS[plot.status]}`}
+        title={`Plot ${plot.plot_number} — ${plot.extent_sqft} sqft`}
+      >
+        <span className="text-xs font-medium">{plot.plot_number}</span>
+        <span className="text-[10px] opacity-80">{plot.extent_sqft} sqft</span>
+      </button>
+
+      {open && (
+        <div className="absolute z-10 top-full mt-1 left-0 doc-card p-3 w-48 text-xs shadow-lg">
+          <p className="font-mono font-medium text-ink mb-1">Plot {plot.plot_number}</p>
+          <p className="font-mono text-ink/60 mb-2">{formatMoney(plot.total_price, currency)}</p>
+          <button onClick={onViewDetail} className="text-brand-700 hover:underline mb-2 block">View full details →</button>
+          <p className="text-ink/40 mb-2 uppercase tracking-wide text-[10px]">Change status:</p>
+          <div className="flex flex-wrap gap-1">
+            {Object.keys(STATUS_COLORS).map((s) => (
+              <button
+                key={s}
+                onClick={() => changeStatus(s)}
+                className={`px-2 py-1 rounded ${STATUS_COLORS[s]} text-white text-[10px] font-mono transition hover:opacity-80`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Projects() {
   const { user } = useAuth()
   const currency = user?.tenant_currency || 'INR'
@@ -488,10 +592,11 @@ export default function Projects() {
   const [selectedProject, setSelectedProject] = useState(null)
   const [editingProject, setEditingProject] = useState(null)
   const [plots, setPlots] = useState([])
-  const [view, setView] = useState('map') // 'map' | 'grid'
+  const [view, setView] = useState('grid') // 'grid' | 'map' | 'live'
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
   const [detailPlotId, setDetailPlotId] = useState(null)
+  const { showToast } = useToast()
 
   const loadProjects = () => api.get('/plots/projects').then((res) => {
     setProjects(res.data)
@@ -512,7 +617,6 @@ export default function Projects() {
     if (selectedProject) loadPlots(selectedProject.id)
   }, [selectedProject?.id])
 
-  const { showToast } = useToast()
   const deleteProject = async (project) => {
     if (!window.confirm(`Delete "${project.name}"? This only works if it has no plots.`)) return
     try {
@@ -531,8 +635,8 @@ export default function Projects() {
 
   return (
     <div>
-      <p className="font-mono text-xs uppercase tracking-widest text-brand-600 mb-1">Inventory</p>
-      <h1 className="font-display text-3xl font-semibold text-ink mb-4">Projects &amp; Plots</h1>
+      <p className="text-xs uppercase tracking-wide text-brand-600 font-medium mb-1">Inventory</p>
+      <h1 className="font-display text-3xl font-bold text-ink mb-4">Projects &amp; Plots</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Project list */}
@@ -550,7 +654,7 @@ export default function Projects() {
               ) : (
                 <div
                   key={p.id}
-                  className={`w-full text-left p-3 border transition ${
+                  className={`w-full text-left p-3 rounded-lg border transition ${
                     selectedProject?.id === p.id ? 'border-brand-600 bg-brand-50' : 'border-ink/10 bg-white hover:border-ink/25'
                   }`}
                 >
@@ -580,67 +684,60 @@ export default function Projects() {
               <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                 <h2 className="font-display font-semibold text-ink">{selectedProject.name}</h2>
                 <div className="flex items-center gap-3">
-                  {selectedProject.layout_image_url && (
-                    <div className="flex text-xs font-mono border border-ink/15">
+                  <div className="flex text-xs font-mono border border-ink/15 rounded-lg overflow-hidden">
+                    <button onClick={() => setView('grid')}
+                      className={`px-2 py-1 flex items-center gap-1 transition ${view === 'grid' ? 'bg-ink text-white' : 'text-ink/60 hover:bg-ink/5'}`}>
+                      <Grid3x3 size={12} /> grid
+                    </button>
+                    {selectedProject.layout_image_url && (
                       <button onClick={() => setView('map')}
                         className={`px-2 py-1 flex items-center gap-1 transition ${view === 'map' ? 'bg-ink text-white' : 'text-ink/60 hover:bg-ink/5'}`}>
-                        <MapIcon size={12} /> map
+                        <MapIcon size={12} /> layout
                       </button>
-                      <button onClick={() => setView('grid')}
-                        className={`px-2 py-1 flex items-center gap-1 transition ${view === 'grid' ? 'bg-ink text-white' : 'text-ink/60 hover:bg-ink/5'}`}>
-                        <Grid3x3 size={12} /> grid
-                      </button>
-                    </div>
-                  )}
+                    )}
+                    <button onClick={() => setView('live')}
+                      className={`px-2 py-1 flex items-center gap-1 transition ${view === 'live' ? 'bg-ink text-white' : 'text-ink/60 hover:bg-ink/5'}`}>
+                      <Navigation size={12} /> live map
+                    </button>
+                  </div>
                   <div className="relative">
                     <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-ink/30" />
                     <input
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder="Search plot no."
-                      className="border border-ink/15 pl-6 pr-2 py-1 text-xs w-32 font-mono focus:border-brand-500 focus:outline-none"
+                      className="border border-ink/15 rounded-lg pl-6 pr-2 py-1 text-xs w-32 font-mono focus:border-brand-500 focus:outline-none"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Legend */}
-              <div className="flex gap-4 mb-4 text-xs text-ink/60 font-mono flex-wrap">
-                {Object.entries(STATUS_COLORS).map(([status, color]) => (
-                  <div key={status} className="flex items-center gap-1.5">
-                    <span className={`w-2.5 h-2.5 ${color}`} />
-                    {status}
-                  </div>
-                ))}
-              </div>
+              {view !== 'live' && (
+                <div className="flex gap-4 mb-4 text-xs text-ink/60 font-mono flex-wrap">
+                  {Object.entries(STATUS_COLORS).map(([status, color]) => (
+                    <div key={status} className="flex items-center gap-1.5">
+                      <span className={`w-2.5 h-2.5 rounded-full ${color}`} />
+                      {status}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {loading ? (
                 <p className="text-sm text-ink/40">Loading plots...</p>
-              ) : selectedProject.layout_image_url && view === 'map' ? (
-                <LayoutMap project={selectedProject} plots={plots} onUpdated={() => loadPlots(selectedProject.id)} onCreated={() => loadPlots(selectedProject.id)} onViewDetail={setDetailPlotId} currency={currency} />
-              ) : !selectedProject.layout_image_url ? (
-                <>
-                  <LayoutUpload projectId={selectedProject.id} onUploaded={loadProjects} />
-                  <div className="mt-4">
-                    <div className="flex items-center gap-4">
-                      <NewPlotFormToggle projectId={selectedProject.id} onCreated={() => loadPlots(selectedProject.id)} />
-                      <BulkImportPlots projectId={selectedProject.id} onImported={() => loadPlots(selectedProject.id)} />
-                    </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-3 grid-paper p-2">
-                      {filteredPlots.map((plot) => (
-                        <PlotCell key={plot.id} plot={plot} onUpdated={() => loadPlots(selectedProject.id)} onViewDetail={() => setDetailPlotId(plot.id)} currency={currency} />
-                      ))}
-                    </div>
-                    {filteredPlots.length === 0 && <p className="text-sm text-ink/40 mt-2">No plots added yet.</p>}
-                  </div>
-                </>
+              ) : view === 'live' ? (
+                <LiveMapView project={selectedProject} plots={plots} currency={currency} onViewDetail={setDetailPlotId} />
+              ) : view === 'map' && selectedProject.layout_image_url ? (
+                <LayoutMap project={selectedProject} plots={plots} onUpdated={() => loadPlots(selectedProject.id)} onCreated={() => loadPlots(selectedProject.id)} onViewDetail={setDetailPlotId} />
+              ) : !selectedProject.layout_image_url && view === 'map' ? (
+                <LayoutUpload projectId={selectedProject.id} onUploaded={loadProjects} />
               ) : (
-                <div className="grid-paper p-2">
-                  <div className="flex items-center gap-4">
+                <div>
+                  <div className="flex items-center gap-4 mb-3">
                     <NewPlotFormToggle projectId={selectedProject.id} onCreated={() => loadPlots(selectedProject.id)} />
                     <BulkImportPlots projectId={selectedProject.id} onImported={() => loadPlots(selectedProject.id)} />
                   </div>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-3">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                     {filteredPlots.map((plot) => (
                       <PlotCell key={plot.id} plot={plot} onUpdated={() => loadPlots(selectedProject.id)} onViewDetail={() => setDetailPlotId(plot.id)} currency={currency} />
                     ))}
@@ -660,67 +757,6 @@ export default function Projects() {
           onUpdated={() => selectedProject && loadPlots(selectedProject.id)}
           currency={currency}
         />
-      )}
-    </div>
-  )
-}
-
-function NewPlotFormToggle({ projectId, onCreated }) {
-  const [open, setOpen] = useState(false)
-  if (!open) {
-    return (
-      <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 text-sm text-brand-700 font-medium hover:underline">
-        <Plus size={15} /> Add plot
-      </button>
-    )
-  }
-  return <NewPlotForm projectId={projectId} onDone={() => setOpen(false)} onCreated={onCreated} />
-}
-
-function PlotCell({ plot, onUpdated, onViewDetail, currency }) {
-  const [open, setOpen] = useState(false)
-  const { showToast } = useToast()
-
-  const changeStatus = async (status) => {
-    try {
-      await api.patch(`/plots/${plot.id}`, { status })
-      showToast('Plot status updated', 'success')
-      setOpen(false)
-      onUpdated()
-    } catch (err) {
-      showToast(errorMessage(err), 'error')
-    }
-  }
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className={`w-full aspect-square text-white font-mono flex flex-col items-center justify-center border border-black/10 transition hover:brightness-110 hover:scale-[1.03] ${STATUS_COLORS[plot.status]}`}
-        title={`Plot ${plot.plot_number} — ${plot.extent_sqft} sqft`}
-      >
-        <span className="text-xs font-medium">{plot.plot_number}</span>
-        <span className="text-[10px] opacity-80">{plot.extent_sqft} sqft</span>
-      </button>
-
-      {open && (
-        <div className="absolute z-10 top-full mt-1 left-0 doc-card p-3 w-48 text-xs shadow-lg">
-          <p className="font-mono font-medium text-ink mb-1">Plot {plot.plot_number}</p>
-          <p className="font-mono text-ink/60 mb-2">{formatMoney(plot.total_price, currency)}</p>
-          <button onClick={onViewDetail} className="text-brand-700 hover:underline mb-2 block">View full details →</button>
-          <p className="text-ink/40 mb-2 uppercase tracking-wide text-[10px]">Change status:</p>
-          <div className="flex flex-wrap gap-1">
-            {Object.keys(STATUS_COLORS).map((s) => (
-              <button
-                key={s}
-                onClick={() => changeStatus(s)}
-                className={`px-2 py-1 ${STATUS_COLORS[s]} text-white text-[10px] font-mono transition hover:opacity-80`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
       )}
     </div>
   )
