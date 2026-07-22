@@ -19,6 +19,7 @@ const SupportTickets = lazy(() => import('./pages/SupportTickets'))
 const Tenants = lazy(() => import('./pages/Tenants'))
 const SubscriptionPlans = lazy(() => import('./pages/SubscriptionPlans'))
 const MyPlan = lazy(() => import('./pages/MyPlan'))
+const SubscriptionHistory = lazy(() => import('./pages/SubscriptionHistory'))
 
 function PageLoader() {
   return <div className="p-8 text-ink/40 text-sm">Loading...</div>
@@ -91,6 +92,9 @@ export default function App() {
       } />
       <Route path="/my-plan" element={
         <ProtectedRoute><AdminLayout><MyPlan /></AdminLayout></ProtectedRoute>
+      } />
+      <Route path="/subscription-history" element={
+        <ProtectedRoute><AdminLayout><SubscriptionHistory /></AdminLayout></ProtectedRoute>
       } />
     </Routes>
   )

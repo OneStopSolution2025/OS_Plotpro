@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
-import { MapPinned, Phone, FileSignature, Plus, Clock } from 'lucide-react'
+import { MapPinned, Phone, FileSignature, Plus, Clock, AlertTriangle } from 'lucide-react'
 import api from '../api/client'
 import { useToast } from '../context/ToastContext'
 import { errorMessage } from '../utils/errors'
@@ -49,6 +49,7 @@ export default function Dashboard() {
   const [statusBreakdown, setStatusBreakdown] = useState([])
   const [recentActivity, setRecentActivity] = useState([])
   const [loading, setLoading] = useState(true)
+  const [myPlan, setMyPlan] = useState(null)
   const { showToast } = useToast()
 
   useEffect(() => {
@@ -81,12 +82,27 @@ export default function Dashboard() {
       setRecentActivity(activity)
     }).catch((err) => showToast(errorMessage(err, 'Could not load dashboard data'), 'error'))
       .finally(() => setLoading(false))
+
+    api.get('/tenants/my-plan').then((res) => setMyPlan(res.data)).catch(() => {})
   }, [])
 
   return (
     <div>
       <p className="text-xs uppercase tracking-wide text-brand-600 font-medium mb-1">Overview</p>
       <h1 className="font-display text-3xl font-bold text-ink mb-5">Dashboard</h1>
+
+      {myPlan?.days_to_expiry != null && myPlan.days_to_expiry <= 14 && (
+        <Link to="/my-plan" className="flex items-center justify-between doc-card p-4 mb-5 border-l-4 border-rust-500 hover:border-rust-600 transition group">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="text-rust-500 flex-shrink-0" size={18} />
+            <p className="text-sm text-ink/70">
+              <span className="font-medium text-ink">
+                Your subscription {myPlan.days_to_expiry <= 0 ? 'has expired' : `expires in ${myPlan.days_to_expiry} day${myPlan.days_to_expiry === 1 ? '' : 's'}`}
+              </span> — tap to renew or upgrade
+            </p>
+          </div>
+        </Link>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         <QuickAction to="/enquiries" icon={Phone} label="New Enquiry" />

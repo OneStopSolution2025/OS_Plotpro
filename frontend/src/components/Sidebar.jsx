@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, MapPinned, Phone, FileSignature, CreditCard, Users, FileText, LifeBuoy, Building2, LogOut, X, Copy, Check, Wallet, Tag } from 'lucide-react'
+import { LayoutDashboard, MapPinned, Phone, FileSignature, CreditCard, Users, FileText, LifeBuoy, Building2, LogOut, X, Copy, Check, Wallet, Tag, History } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 
@@ -19,6 +19,7 @@ const platformLinks = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/tenants', label: 'All Promoters', icon: Building2 },
   { to: '/subscription-plans', label: 'Subscription Plans', icon: Tag },
+  { to: '/subscription-history', label: 'Subscription History', icon: History },
   { to: '/support', label: 'Support Tickets', icon: LifeBuoy },
 ]
 

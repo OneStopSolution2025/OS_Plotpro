@@ -5,6 +5,18 @@ import { useToast } from '../context/ToastContext'
 import { errorMessage } from '../utils/errors'
 import { formatMoney } from '../utils/currency'
 
+function Field({ label, hint, children }) {
+  return (
+    <div>
+      <label className="text-xs font-medium text-ink/70 uppercase tracking-wide block mb-1">{label}</label>
+      {children}
+      {hint && <p className="text-[11px] text-ink/40 mt-1">{hint}</p>}
+    </div>
+  )
+}
+
+const fieldInput = "w-full border border-ink/15 px-3 py-2 text-sm rounded-lg bg-transparent focus:border-brand-500 focus:outline-none"
+
 function EditPlanForm({ plan, onDone, onUpdated }) {
   const [form, setForm] = useState({
     display_name: plan.display_name,
@@ -38,32 +50,46 @@ function EditPlanForm({ plan, onDone, onUpdated }) {
   }
 
   return (
-    <form onSubmit={submit} className="doc-card p-5 space-y-2">
+    <form onSubmit={submit} className="doc-card p-5 space-y-3">
       <p className="font-display font-semibold text-ink mb-1">Edit {plan.display_name}</p>
-      <input placeholder="Display name" value={form.display_name}
-        onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-        className="w-full border border-ink/15 px-3 py-2 text-sm rounded-lg bg-transparent focus:border-brand-500 focus:outline-none" />
-      <input placeholder="Price (per month)" type="number" value={form.price}
-        onChange={(e) => setForm({ ...form, price: e.target.value })}
-        className="w-full border border-ink/15 px-3 py-2 text-sm rounded-lg font-mono bg-transparent focus:border-brand-500 focus:outline-none" />
+      <Field label="Display name">
+        <input value={form.display_name}
+          onChange={(e) => setForm({ ...form, display_name: e.target.value })}
+          className={fieldInput} />
+      </Field>
+      <Field label="Price per month" hint="in the plan's billing currency">
+        <input type="number" value={form.price}
+          onChange={(e) => setForm({ ...form, price: e.target.value })}
+          className={`${fieldInput} font-mono`} />
+      </Field>
       <div className="grid grid-cols-3 gap-2">
-        <input placeholder="Max projects" type="number" value={form.max_projects}
-          onChange={(e) => setForm({ ...form, max_projects: e.target.value })}
-          className="border border-ink/15 px-3 py-2 text-sm rounded-lg font-mono bg-transparent focus:border-brand-500 focus:outline-none" />
-        <input placeholder="Max staff" type="number" value={form.max_staff}
-          onChange={(e) => setForm({ ...form, max_staff: e.target.value })}
-          className="border border-ink/15 px-3 py-2 text-sm rounded-lg font-mono bg-transparent focus:border-brand-500 focus:outline-none" />
-        <input placeholder="Max plots" type="number" value={form.max_plots}
-          onChange={(e) => setForm({ ...form, max_plots: e.target.value })}
-          className="border border-ink/15 px-3 py-2 text-sm rounded-lg font-mono bg-transparent focus:border-brand-500 focus:outline-none" />
+        <Field label="Max projects">
+          <input type="number" value={form.max_projects}
+            onChange={(e) => setForm({ ...form, max_projects: e.target.value })}
+            className={`${fieldInput} font-mono`} />
+        </Field>
+        <Field label="Max staff">
+          <input type="number" value={form.max_staff}
+            onChange={(e) => setForm({ ...form, max_staff: e.target.value })}
+            className={`${fieldInput} font-mono`} />
+        </Field>
+        <Field label="Max plots">
+          <input type="number" value={form.max_plots}
+            onChange={(e) => setForm({ ...form, max_plots: e.target.value })}
+            className={`${fieldInput} font-mono`} />
+        </Field>
       </div>
-      <p className="text-[11px] text-ink/40">Leave a limit blank for "unlimited"</p>
-      <textarea placeholder="Description" value={form.description} rows={2}
-        onChange={(e) => setForm({ ...form, description: e.target.value })}
-        className="w-full border border-ink/15 px-3 py-2 text-sm rounded-lg bg-transparent focus:border-brand-500 focus:outline-none" />
-      <input placeholder="Features (comma separated)" value={form.features}
-        onChange={(e) => setForm({ ...form, features: e.target.value })}
-        className="w-full border border-ink/15 px-3 py-2 text-sm rounded-lg bg-transparent focus:border-brand-500 focus:outline-none" />
+      <p className="text-[11px] text-ink/40 -mt-1">Leave any limit blank for "unlimited"</p>
+      <Field label="Description" hint="One line shown under the plan name">
+        <textarea value={form.description} rows={2}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          className={fieldInput} />
+      </Field>
+      <Field label="Features" hint="Comma-separated — each becomes a checklist bullet">
+        <input value={form.features}
+          onChange={(e) => setForm({ ...form, features: e.target.value })}
+          className={fieldInput} />
+      </Field>
       <div className="flex gap-2 pt-1">
         <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 rounded-lg text-sm transition">Save</button>
         <button type="button" onClick={onDone} className="text-sm text-ink/50 hover:text-ink">Cancel</button>

@@ -30,5 +30,6 @@ class Tenant(UUIDPKMixin, TimestampMixin, Base):
     subscription_plan: Mapped[SubscriptionPlan] = mapped_column(
         Enum(SubscriptionPlan), default=SubscriptionPlan.TRIAL
     )
+    subscription_started_at: Mapped[date] = mapped_column(Date, nullable=True)
     subscription_expires_at: Mapped[date] = mapped_column(Date, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
